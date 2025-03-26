@@ -54,6 +54,22 @@
             bottom: 50px;
             right: 50px;
             z-index: 1000;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: pointer;
+        }
+
+        /* Add a touch-friendly overlay for the nipple area */
+        #nipple::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            touch-action: manipulation;
         }
     </style>
 </head>
