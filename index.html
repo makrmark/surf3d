@@ -56,13 +56,14 @@
             width: 200px;
             height: 200px;
             touch-action: none;
-            z-index: 1000;
+            z-index: 2000;
             user-select: auto;
             /* Allow text selection */
             -webkit-user-select: auto;
             /* Safari */
             -ms-user-select: auto;
             /* IE 10+ */
+            pointer-events: auto;
         }
 
         #foam-zone-overlay {
@@ -75,7 +76,7 @@
             color: yellow;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             font-family: Futura, Arial, sans-serif;
-            z-index: 2000;
+            z-index: 500;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
@@ -623,14 +624,6 @@
 
         animate();
     </script>
-    </head>
-
-    <body>
-        <div id="container"></div>
-        <div id="hud"></div>
-        <div id="help">Controls: Left/Right arrows to turn, Up/Down arrows to shift position on board</div>
-        <div id="foam-zone-overlay">Foam Zoned!</div>
-        <div id="nipple"></div>
-    </body>
+</body>
 
 </html>
