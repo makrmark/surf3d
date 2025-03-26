@@ -42,12 +42,15 @@ export class Surfer {
         const slopeAngle = this.calculateWaveSlope(); // Get the slope angle
         const gravityForce = this.mass * this.g; // Total gravity force in y direction
 
-        // Project gravity force onto the slope
+        // Calculate the tilt angle based on z position
+        const tiltAngle = Math.atan2(-this.pool.tiltHeight, this.pool.length);
+
+        // Project gravity force onto the slope and tilt
         // When slope is negative (wave going up), force should be negative in z
         // When slope is positive (wave going down), force should be positive in z
         return {
             x: gravityForce * Math.sin(this.theta),
-            z: gravityForce * Math.sin(slopeAngle) * Math.cos(this.theta)
+            z: gravityForce * (Math.sin(slopeAngle) + Math.sin(tiltAngle)) * Math.cos(this.theta)
         };
     }
 
@@ -130,7 +133,12 @@ export class Surfer {
     calculateWaveSlope() {
         const k = 2 * Math.PI / this.pool.waveLength; // Wave number
         const df_dz = -this.pool.waveAmplitude * k * Math.sin(k * (this.pool.length - this.z)); // Wave slope
-        this.waveSlope = Math.atan(df_dz); // Store and return the slope angle
+
+        // Add the pool's tilt to the slope
+        const tiltSlope = this.pool.tiltHeight / this.pool.length;
+        const totalSlope = df_dz + tiltSlope;
+
+        this.waveSlope = Math.atan(totalSlope); // Store and return the slope angle
         return this.waveSlope;
     }
 
@@ -183,7 +191,12 @@ export class Surfer {
 
     getBoardPosition() {
         const k = 2 * Math.PI / this.pool.waveLength;
-        const y = this.pool.waveAmplitude * Math.cos(k * (this.pool.length - this.z));
+
+        // Calculate the tilt based on z position
+        const tilt = -(this.pool.tiltHeight * (this.z / this.pool.length));
+
+        // Add the tilt to the wave height
+        const y = this.pool.waveAmplitude * Math.cos(k * (this.pool.length - this.z)) + tilt;
         return new THREE.Vector3(this.x, y, this.z);
     }
 

@@ -138,8 +138,14 @@
                 for (let j = 0; j <= segmentsZ; j++) {
                     const x = (i / segmentsX - 0.5) * pool.width;
                     const z = (j / segmentsZ) * pool.length;
-                    // Continuous cosine wave throughout the pool
-                    let y = pool.waveAmplitude * Math.cos((2 * Math.PI / pool.waveLength) * (pool.length - z));
+
+                    // Calculate the tilt based on z position
+                    // At z = 0 (north), tilt is 0
+                    // At z = pool.length (south), tilt is -tiltHeight
+                    const tilt = -(pool.tiltHeight * (z / pool.length));
+
+                    // Continuous cosine wave with tilt
+                    let y = pool.waveAmplitude * Math.cos((2 * Math.PI / pool.waveLength) * (pool.length - z)) + tilt;
                     positions.push(x, y, z);
                 }
             }
@@ -201,8 +207,11 @@
                     obj.position.x = (Math.random() - 0.5) * pool.width; // Randomize x position
                 }
 
-                // Update y position to follow the wave profile
-                obj.position.y = pool.waveAmplitude * Math.cos(k * (pool.length - obj.position.z));
+                // Calculate the tilt based on z position
+                const tilt = -(pool.tiltHeight * (obj.position.z / pool.length));
+
+                // Update y position to follow the wave profile with tilt
+                obj.position.y = pool.waveAmplitude * Math.cos(k * (pool.length - obj.position.z)) + tilt;
             });
         }
 
@@ -221,7 +230,7 @@
         scene.add(poolBottom);
 
         // Create foam as a surface
-        const foamHeight = pool.wallHeight - 1; // Slightly below the top of the walls
+        const foamHeight = pool.wallHeight - 2; // Slightly below the top of the walls
         const waveEnd = pool.waveLength; // End of wave/Start of foam zone
         const foamLength = pool.length - waveEnd; // Length from wave end to pool end
 
@@ -303,21 +312,21 @@
             metalness: 0.1
         });
 
-        // Adjust wall height to extend 10m lower
-        const extendedWallHeight = pool.wallHeight + 10;
+        // Adjust wall height to extend 14m lower (10m + 4m for tilt)
+        const extendedWallHeight = pool.wallHeight + 14;
 
         // Create side walls
         const westWall = new THREE.Mesh(
             new THREE.BoxGeometry(pool.wallThickness, extendedWallHeight, pool.length),
             woodMaterial
         );
-        westWall.position.set(-pool.width / 2 - pool.wallThickness / 2, extendedWallHeight / 2 - 10, pool.length / 2);
+        westWall.position.set(-pool.width / 2 - pool.wallThickness / 2, extendedWallHeight / 2 - 14, pool.length / 2);
 
         const eastWall = new THREE.Mesh(
             new THREE.BoxGeometry(pool.wallThickness, extendedWallHeight, pool.length),
             woodMaterial
         );
-        eastWall.position.set(pool.width / 2 + pool.wallThickness / 2, extendedWallHeight / 2 - 10, pool.length / 2);
+        eastWall.position.set(pool.width / 2 + pool.wallThickness / 2, extendedWallHeight / 2 - 14, pool.length / 2);
 
         // Create end walls
         const northWall = new THREE.Mesh(
@@ -328,7 +337,7 @@
                 metalness: 0.1
             })
         );
-        northWall.position.set(0, extendedWallHeight / 2 - 10, 0);
+        northWall.position.set(0, extendedWallHeight / 2 - 14, 0);
 
         const southWall = new THREE.Mesh(
             new THREE.BoxGeometry(pool.width + 2 * pool.wallThickness, extendedWallHeight, pool.wallThickness),
@@ -338,7 +347,7 @@
                 metalness: 0.1
             })
         );
-        southWall.position.set(0, extendedWallHeight / 2 - 10, pool.length);
+        southWall.position.set(0, extendedWallHeight / 2 - 14, pool.length);
 
         // Add walls to scene
         scene.add(westWall);
@@ -347,7 +356,7 @@
         scene.add(southWall);
 
         // Adjust pool floor to align with the base of the walls
-        poolBottom.position.y = -10; // Align with the base of the extended walls
+        poolBottom.position.y = -14; // Align with the base of the extended walls
 
         // Add additional lighting
         const pointLight = new THREE.PointLight(0xffffff, 1, 200); // Bright white point light
@@ -471,7 +480,7 @@
 
         // Debugging helpers
         const gridHelper = new THREE.GridHelper(200, 50); // Create a grid helper
-        gridHelper.position.y = -10; // Position the grid at the pool floor level
+        gridHelper.position.y = -14; // Position the grid at the pool floor level
         scene.add(gridHelper);
 
         const axesHelper = new THREE.AxesHelper(10);
