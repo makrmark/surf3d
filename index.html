@@ -1,0 +1,587 @@
+<html>
+
+<head>
+    <title>Surf Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        #container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        #hud {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-shadow: 1px 1px 2px black;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        #help {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-shadow: 1px 1px 2px black;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        #nipple {
+            position: fixed;
+            bottom: 50px;
+            left: 50px;
+            z-index: 1000;
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+    <div id="hud"></div>
+    <div id="help">Controls: Left/Right arrows to turn, Up/Down arrows to shift position on board</div>
+    <div id="nipple"></div>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.9.0/dist/nipplejs.min.js"></script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { Pool } from './Pool.js';
+        import { Surfer } from './Surfer.js';
+
+        const pool = new Pool(); // Create a Pool instance
+        const surfer = new Surfer(pool); // Pass the Pool instance to the Surfer
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Set a sky-blue background for contrast
+        scene.background = new THREE.Color(0x87CEEB);
+
+        // Water mesh for wave pool
+        function createWaterMesh() {
+            const positions = [];
+            const indices = [];
+            const segmentsX = 50;
+            const segmentsZ = 50;
+
+            for (let i = 0; i <= segmentsX; i++) {
+                for (let j = 0; j <= segmentsZ; j++) {
+                    const x = (i / segmentsX - 0.5) * pool.width;
+                    const z = (j / segmentsZ) * pool.length;
+                    // Wave at north end (z = pool.length)
+                    let y = (z >= pool.length - pool.waveLength) ?
+                        pool.waveAmplitude * Math.cos((2 * Math.PI / pool.waveLength) * (pool.length - z)) : 0;
+                    positions.push(x, y, z);
+                }
+            }
+
+            for (let i = 0; i < segmentsX; i++) {
+                for (let j = 0; j < segmentsZ; j++) {
+                    const a = i + j * (segmentsX + 1);
+                    const b = (i + 1) + j * (segmentsX + 1);
+                    const c = (i + 1) + (j + 1) * (segmentsX + 1);
+                    const d = i + (j + 1) * (segmentsX + 1);
+                    indices.push(a, b, c, a, c, d);
+                }
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
+            geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(indices), 1));
+            geometry.computeVertexNormals();
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x0000ff, // Blue
+                specular: 0x111111,
+                shininess: 50,
+                transparent: true,
+                opacity: 0.8,
+                side: THREE.DoubleSide
+            });
+            return new THREE.Mesh(geometry, material);
+        }
+
+        const waterMesh = createWaterMesh();
+        scene.add(waterMesh);
+
+        // Add flowing white objects to represent water speed
+        const flowingObjects = [];
+        const numObjects = 50; // Number of objects
+        const objectGeometry = new THREE.SphereGeometry(0.2, 8, 8); // Small spheres
+        const objectMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff }); // White color
+
+        for (let i = 0; i < numObjects; i++) {
+            const obj = new THREE.Mesh(objectGeometry, objectMaterial);
+            obj.position.set(
+                (Math.random() - 0.5) * pool.width, // Random x position within pool width
+                Math.random() * 2, // Random y position slightly above water
+                Math.random() * pool.length // Random z position within pool length
+            );
+            scene.add(obj);
+            flowingObjects.push(obj);
+        }
+
+        // Update flowing objects to follow the wave profile
+        function updateFlowingObjects(dt) {
+            const flowSpeed = 10; // Speed of flow (m/s)
+            const k = 2 * Math.PI / pool.waveLength; // Wave number
+
+            flowingObjects.forEach(obj => {
+                obj.position.z -= flowSpeed * dt; // Move south
+                if (obj.position.z < 0) {
+                    obj.position.z = pool.length; // Reset to the north end
+                    obj.position.x = (Math.random() - 0.5) * pool.width; // Randomize x position
+                }
+
+                // Update y position to follow the wave profile
+                if (obj.position.z >= pool.length - pool.waveLength) {
+                    obj.position.y = pool.waveAmplitude * Math.cos(k * (pool.length - obj.position.z));
+                } else {
+                    obj.position.y = 0; // Flat section
+                }
+            });
+        }
+
+        // Adjust the pool floor to align with all edges of the pool
+        const poolBottomGeometry = new THREE.PlaneGeometry(pool.width + 2 * pool.wallThickness, pool.length + 2 * pool.wallThickness);
+        const poolBottomMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff, // White color
+            roughness: 1,
+            metalness: 0
+        });
+        const poolBottom = new THREE.Mesh(poolBottomGeometry, poolBottomMaterial);
+
+        // Rotate and position the bottom
+        poolBottom.rotation.x = -Math.PI / 2; // Make it horizontal
+        poolBottom.position.set(0, -10, pool.length / 2); // Align with the base of the extended walls
+        scene.add(poolBottom);
+
+        // Create foam as a 3D block
+        const foamHeight = pool.wallHeight - 0.1; // Slightly below the top of the walls
+        const waveEnd = pool.waveLength; // End of wave/Start of foam zone
+        const foamLength = pool.length - waveEnd; // Length from wave end to pool end
+        const foamGeometry = new THREE.BoxGeometry(pool.width, foamHeight, foamLength);
+        const foamMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 1,
+            metalness: 0,
+            opacity: 0.8,
+            transparent: true
+        });
+        const foamMesh = new THREE.Mesh(foamGeometry, foamMaterial);
+
+        // Position foam at the south end of the pool, at half wall height
+        foamMesh.position.set(0, foamHeight / 4, foamLength / 2);
+
+        // Add foam to the scene
+        scene.add(foamMesh);
+
+        // Create wooden material for pool sides
+        const woodMaterial = new THREE.MeshStandardMaterial({
+            color: 0x4a2f1b,
+            roughness: 0.8,
+            metalness: 0.1
+        });
+
+        // Adjust wall height to extend 10m lower
+        const extendedWallHeight = pool.wallHeight + 10;
+
+        // Create side walls
+        const leftWall = new THREE.Mesh(
+            new THREE.BoxGeometry(pool.wallThickness, extendedWallHeight, pool.length),
+            woodMaterial
+        );
+        leftWall.position.set(-pool.width / 2 - pool.wallThickness / 2, extendedWallHeight / 2 - 10, pool.length / 2);
+
+        const rightWall = new THREE.Mesh(
+            new THREE.BoxGeometry(pool.wallThickness, extendedWallHeight, pool.length),
+            woodMaterial
+        );
+        rightWall.position.set(pool.width / 2 + pool.wallThickness / 2, extendedWallHeight / 2 - 10, pool.length / 2);
+
+        // Create end walls
+        const backWall = new THREE.Mesh(
+            new THREE.BoxGeometry(pool.width + 2 * pool.wallThickness, extendedWallHeight, pool.wallThickness),
+            woodMaterial
+        );
+        backWall.position.set(0, extendedWallHeight / 2 - 10, 0);
+
+        const frontWall = new THREE.Mesh(
+            new THREE.BoxGeometry(pool.width + 2 * pool.wallThickness, extendedWallHeight, pool.wallThickness),
+            new THREE.MeshStandardMaterial({
+                color: 0x800080, // Purple
+                roughness: 0.8,
+                metalness: 0.1
+            })
+        );
+        frontWall.position.set(0, extendedWallHeight / 2 - 10, pool.length);
+
+        // Add walls to scene
+        scene.add(leftWall);
+        scene.add(rightWall);
+        scene.add(backWall);
+        scene.add(frontWall);
+
+        // Adjust pool floor to align with the base of the walls
+        poolBottom.position.y = -10; // Align with the base of the extended walls
+
+        // Add additional lighting
+        const pointLight = new THREE.PointLight(0xffffff, 1, 200); // Bright white point light
+        pointLight.position.set(0, 20, pool.length / 2); // Position above the pool
+        scene.add(pointLight);
+
+        const spotLight = new THREE.SpotLight(0xffffff, 0.8); // Spotlight for directional lighting
+        spotLight.position.set(50, 30, 50); // Position at an angle
+        spotLight.target = waterMesh; // Point towards the water
+        scene.add(spotLight);
+
+        // Add lighting to see materials properly
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(50, 50, 50);
+        scene.add(directionalLight);
+
+        // Function to create a fluffy cloud
+        function createCloud() {
+            const cloud = new THREE.Group();
+            const cloudMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                emissive: 0xffffff, // Glow effect
+                emissiveIntensity: 0.5,
+                roughness: 0.9,
+                metalness: 0.0,
+                transparent: true,
+                opacity: 0.9
+            });
+
+            // Add multiple spheres to form a fluffy cloud
+            for (let i = 0; i < 5; i++) {
+                const sphereGeometry = new THREE.SphereGeometry(Math.random() * 2 + 2, 16, 16);
+                const sphere = new THREE.Mesh(sphereGeometry, cloudMaterial);
+                sphere.position.set(
+                    (Math.random() - 0.5) * 5,
+                    (Math.random() - 0.5) * 2,
+                    (Math.random() - 0.5) * 5
+                );
+                cloud.add(sphere);
+            }
+
+            return cloud;
+        }
+
+        // Add clouds to the scene
+        function addClouds() {
+            const numClouds = 50;
+            for (let i = 0; i < numClouds; i++) {
+                const cloud = createCloud();
+                cloud.position.set(
+                    (Math.random() - 0.5) * 200, // Spread clouds across the sky
+                    30 + Math.random() * 20,    // Height above the pool
+                    (Math.random() - 0.5) * 200
+                );
+                scene.add(cloud);
+            }
+        }
+
+        // Call the function to add clouds
+        addClouds();
+
+        // Define the profile of the surfboard
+        const surfboardProfile = [];
+        // Use dimensions from surfer instance
+        const boardLength = surfer.boardLength;
+        const boardWidth = surfer.boardWidth;
+        const boardThickness = surfer.boardThickness;
+
+        // Create a profile for the surfboard (tapered ends)
+        surfboardProfile.push(new THREE.Vector2(0, -boardLength / 2));
+        for (let i = 0; i <= 20; i++) {
+            const t = i / 20;
+            const x = boardWidth * Math.sin(Math.PI * t); // Tapered oval shape
+            const y = -boardLength / 2 + t * boardLength; // Move along the length
+            surfboardProfile.push(new THREE.Vector2(x, y));
+        }
+        surfboardProfile.push(new THREE.Vector2(0, boardLength / 2)); // Top tip
+
+        // Create the surfboard geometry using LatheGeometry
+        const surfboardGeometry = new THREE.LatheGeometry(surfboardProfile, 32); // 32 segments for smoothness
+
+        // Translate the geometry so the pivot point is 3/4 back from the front
+        surfboardGeometry.translate(0, 0, -boardLength * (1 / 4)); // Move the geometry forward
+
+        // Create the surfboard material and mesh
+        const surfboardMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const surfboard = new THREE.Mesh(surfboardGeometry, surfboardMaterial);
+
+        // Rotate the surfboard to lay flat
+        surfboard.rotation.x = Math.PI / 2;
+
+        // Create the surfer's left arm
+        const armLength = 1.0; // 100cm
+        const armGeometry = new THREE.CylinderGeometry(0.05, 0.05, armLength, 8); // Made thicker
+        const armMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 }); // Black
+        const arm = new THREE.Mesh(armGeometry, armMaterial);
+        arm.position.set(0, 0, 0); // Position at shoulder pivot (one circular end at pivot)
+
+        // Create a pivot point at the shoulder
+        const shoulderPivot = new THREE.Group();
+        shoulderPivot.add(arm);
+
+        // Create the hand
+        const handGeometry = new THREE.SphereGeometry(0.1, 4, 4); // Made bigger
+        const handMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 }); // Brown
+        const hand = new THREE.Mesh(handGeometry, handMaterial);
+        hand.position.y = armLength / 2; // Position at end of arm (opposite to shoulder)
+        arm.add(hand);
+
+        // Add the shoulder pivot to the surfboard
+        surfboard.add(shoulderPivot);
+
+        // Add the surfboard to the scene
+        scene.add(surfboard);
+
+        // Set initial camera position with no smoothing
+        updateCamera(1.0);
+
+        // Debugging helpers
+        const gridHelper = new THREE.GridHelper(200, 50); // Create a grid helper
+        gridHelper.position.y = -10; // Position the grid at the pool floor level
+        scene.add(gridHelper);
+
+        const axesHelper = new THREE.AxesHelper(10);
+        axesHelper.position.set(0, 10, pool.length - 10); // Position axes closer to the north end of the pool
+        scene.add(axesHelper);
+        // The AxesHelper colors:
+        // - X-axis: Red
+        // - Y-axis: Green
+        // - Z-axis: Blue
+
+        // Keyboard input
+        let leftPressed = false, rightPressed = false, upPressed = false, downPressed = false;
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') leftPressed = true;
+            else if (e.key === 'ArrowRight') rightPressed = true;
+            else if (e.key === 'ArrowUp') upPressed = true;
+            else if (e.key === 'ArrowDown') downPressed = true; // Changed from false to true
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') leftPressed = false;
+            else if (e.key === 'ArrowRight') rightPressed = false;
+            else if (e.key === 'ArrowUp') upPressed = false;
+            else if (e.key === 'ArrowDown') downPressed = false;
+        });
+
+        // Add nipple control
+        const nippleOptions = {
+            zone: document.getElementById('nipple'),
+            mode: 'static',
+            position: { left: '100px', bottom: '100px' },
+            color: 'white',
+            size: 120
+        };
+
+        const nipple = nipplejs.create(nippleOptions);
+
+        nipple.on('move', (evt, data) => {
+            // Convert angle to radians
+            const angle = data.angle.radian;
+            // Calculate turn input based on angle
+            // -1 to 1 range, where -1 is full left turn and 1 is full right turn
+            const turnInput = Math.cos(angle);
+            // Calculate posture input based on angle
+            // -1 to 1 range, where -1 is back and 1 is forward
+            const postureInput = Math.sin(angle);
+
+            // Update the turn state (left/right)
+            leftPressed = turnInput < -0.5;  // Left gesture turns left
+            rightPressed = turnInput > 0.5;  // Right gesture turns right
+
+            // Update the posture state (forward/back)
+            upPressed = postureInput > 0.5;    // Up gesture moves forward
+            downPressed = postureInput < -0.5; // Down gesture moves back
+        });
+
+        nipple.on('end', () => {
+            leftPressed = false;
+            rightPressed = false;
+            upPressed = false;
+            downPressed = false;
+        });
+
+        // Animation helper functions
+        function updateCamera(smooth_factor) {
+            const CAMERA_TILT = 0;// 0.2;
+
+            // Position camera directly above surfer position in board space
+            const headOffset = new THREE.Vector3(0, surfer.height, 0);
+            const cameraLocalPos = surfboard.worldToLocal(camera.position.clone());
+            cameraLocalPos.copy(headOffset);
+            const cameraWorldPos = surfboard.localToWorld(cameraLocalPos);
+
+            // Smooth camera movement
+            camera.position.lerp(cameraWorldPos, smooth_factor);
+
+            // Calculate look direction in board space
+            const forward = new THREE.Vector3(0, 0, -1);
+            const lookDir = forward.clone();
+            lookDir.y -= CAMERA_TILT;
+
+            // Transform look direction to world space
+            const worldLookDir = surfboard.localToWorld(lookDir.clone()).sub(surfboard.position);
+            const targetPos = camera.position.clone().add(worldLookDir);
+            camera.lookAt(targetPos);
+        }
+
+        // Update the surfboard's position and rotation to pivot around the surfer
+        function updateSurfboard() {
+            surfboard.position.copy(surfer.getBoardPosition());
+            surfboard.rotation.copy(surfer.getBoardPitch());
+
+            // Update shoulder pivot position relative to surfboard
+            shoulderPivot.position.set(
+                -0.3,  // 30cm to the left of surfboard center
+                1.5,   // 1.5m above surfboard
+                0      // At surfboard center
+            );
+        }
+
+        // Update the surfer's arm position and rotation
+        function updateArm() {
+            // Calculate arm rotation based on turn input
+            const turnInput = (leftPressed ? 1 : 0) - (rightPressed ? 1 : 0);
+            const armRotation = turnInput * (15 * Math.PI / 180); // 15 degrees in radians
+
+            // Apply base rotation and turn rotation
+            arm.rotation.x = -Math.PI / 2; // Pivot down 90 degrees
+            arm.rotation.y = 0;            // Point forward
+            arm.rotation.z = armRotation; // Apply turn rotation
+
+        }
+
+        // Function to reset the game
+        function resetGame() {
+            console.log('Game over!');
+            surfer.reset(); // Reset surfer's position and state
+            camera.position.set(0, 10, pool.length / 2); // Reset camera position
+            camera.lookAt(0, 0, 0); // Reset camera orientation
+        }
+
+        // Add this function before the animate loop
+        function isInFoam(position) {
+            const waveEnd = pool.length - pool.waveLength;
+            return position.z <= waveEnd;
+        }
+
+        // Animation loop
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1);
+
+            // Update flowing objects
+            updateFlowingObjects(dt);
+
+            // Process input
+            const turnInput = (leftPressed ? 1 : 0) - (rightPressed ? 1 : 0);
+            const positionInput = (upPressed ? 1 : 0) - (downPressed ? 1 : 0);
+            surfer.update(dt, turnInput, positionInput);
+
+            // Update surfboard
+            updateSurfboard();
+
+            // Update arm
+            updateArm();
+
+            // Update camera with smoothing
+            updateCamera(0.9);
+
+            // Normalize heading to -180 to +180 degrees
+            let heading = (surfer.theta * 180 / Math.PI) % 360;
+            if (heading > 180) heading -= 360;
+            else if (heading < -180) heading += 360;
+
+            // Calculate force magnitudes
+            const gravityForce = surfer.calculateGravityForce();
+            const dragForce = surfer.calculateDragForce(0);
+            const waterForce = surfer.calculateWaterForce();
+            const gravityMagnitude = Math.sqrt(gravityForce.x ** 2 + gravityForce.z ** 2);
+            const dragMagnitude = Math.sqrt(dragForce.x ** 2 + dragForce.z ** 2);
+            const waterMagnitude = Math.sqrt(waterForce.x ** 2 + waterForce.z ** 2);
+            const netVelocityMagnitude = Math.sqrt(surfer.velocity.vx ** 2 + surfer.velocity.vz ** 2);
+
+            // Use calculateWaveSlope for wave slope
+            const waveSlope = surfer.calculateWaveSlope();
+
+            // Update HUD
+            document.getElementById('hud').innerHTML = `
+                Speed: ${netVelocityMagnitude.toFixed(2)} m/s<br>
+                Water Speed: ${surfer.waterSpeed.toFixed(2)} m/s<br>
+                Heading: ${heading.toFixed(1)} deg<br>
+                Position: (${surfer.x.toFixed(1)}, ${surfer.z.toFixed(1)})<br>
+                Stance: ${surfer.getStanceName()}<br>
+                Wave Slope: ${(waveSlope * 180 / Math.PI).toFixed(1)}°<br>
+                Forces (N):<br>
+                - Gravity: ${gravityMagnitude.toFixed(1)}<br>
+                - Drag: ${dragMagnitude.toFixed(1)}<br>
+                - Water: ${waterMagnitude.toFixed(1)}<br>
+                Net Velocity: ${netVelocityMagnitude.toFixed(2)} m/s<br>
+            `;
+
+            // Check if surfer is in foam zone
+            const surferPosition = surfer.getBoardPosition();
+            if (isInFoam(surferPosition)) {
+                scene.background.lerp(new THREE.Color(0xffffff), 0.1); // Smoothly transition to white
+            } else {
+                scene.background.lerp(new THREE.Color(0x87CEEB), 0.1); // Smoothly transition back to sky blue
+            }
+
+            // Boundary check
+            const halfWidth = pool.width / 2;
+            if (Math.abs(surfer.x) > halfWidth || surfer.z < 0 || surfer.z > pool.length) {
+                resetGame();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+
+</html>
