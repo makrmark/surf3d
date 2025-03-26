@@ -183,8 +183,7 @@ export class Surfer {
 
     getBoardPosition() {
         const k = 2 * Math.PI / this.pool.waveLength;
-        const y = (this.z >= this.pool.length - this.pool.waveLength) ?
-            this.pool.waveAmplitude * Math.cos(k * (this.pool.length - this.z)) : 0;
+        const y = this.pool.waveAmplitude * Math.cos(k * (this.pool.length - this.z));
         return new THREE.Vector3(this.x, y, this.z);
     }
 

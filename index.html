@@ -138,9 +138,8 @@
                 for (let j = 0; j <= segmentsZ; j++) {
                     const x = (i / segmentsX - 0.5) * pool.width;
                     const z = (j / segmentsZ) * pool.length;
-                    // Wave at north end (z = pool.length)
-                    let y = (z >= pool.length - pool.waveLength) ?
-                        pool.waveAmplitude * Math.cos((2 * Math.PI / pool.waveLength) * (pool.length - z)) : 0;
+                    // Continuous cosine wave throughout the pool
+                    let y = pool.waveAmplitude * Math.cos((2 * Math.PI / pool.waveLength) * (pool.length - z));
                     positions.push(x, y, z);
                 }
             }
@@ -203,11 +202,7 @@
                 }
 
                 // Update y position to follow the wave profile
-                if (obj.position.z >= pool.length - pool.waveLength) {
-                    obj.position.y = pool.waveAmplitude * Math.cos(k * (pool.length - obj.position.z));
-                } else {
-                    obj.position.y = 0; // Flat section
-                }
+                obj.position.y = pool.waveAmplitude * Math.cos(k * (pool.length - obj.position.z));
             });
         }
 
@@ -225,26 +220,82 @@
         poolBottom.position.set(0, -10, pool.length / 2); // Align with the base of the extended walls
         scene.add(poolBottom);
 
-        // Create foam as a 3D block
-        const foamHeight = pool.wallHeight - 0.1; // Slightly below the top of the walls
+        // Create foam as a surface
+        const foamHeight = pool.wallHeight - 1; // Slightly below the top of the walls
         const waveEnd = pool.waveLength; // End of wave/Start of foam zone
         const foamLength = pool.length - waveEnd; // Length from wave end to pool end
-        const foamGeometry = new THREE.BoxGeometry(pool.width, foamHeight, foamLength);
+
+        // Create a plane for the foam surface
+        const foamGeometry = new THREE.PlaneGeometry(pool.width, foamLength);
         const foamMaterial = new THREE.MeshStandardMaterial({
             color: 0xffffff,
-            roughness: 1,
-            metalness: 0,
-            opacity: 0.8,
-            transparent: true
+            roughness: 0.1, // Very low roughness for high shine
+            metalness: 0.2, // Slight metallic effect
+            opacity: 0.9,
+            transparent: true,
+            emissive: 0xffffff, // Add white emission
+            emissiveIntensity: 0.8, // Higher emission intensity
+            side: THREE.DoubleSide // Make it visible from both sides
         });
         const foamMesh = new THREE.Mesh(foamGeometry, foamMaterial);
 
-        // Position foam at the south end of the pool, at half wall height
-        foamMesh.position.set(0, foamHeight / 4, foamLength / 2);
+        // Position foam surface at the top of where the foam block was
+        foamMesh.position.set(0, foamHeight, foamLength / 2);
+        // Rotate to be horizontal
+        foamMesh.rotation.x = -Math.PI / 2;
 
         // Add foam to the scene
         scene.add(foamMesh);
 
+        // Create foam bubbles
+        const foamBubbles = [];
+        const numBubbles = 50; // Number of foam bubbles
+        const bubbleGeometry = new THREE.SphereGeometry(1.0, 16, 16); // 1m radius bubbles
+        const bubbleMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.1, // Very low roughness for high shine
+            metalness: 0.2, // Slight metallic effect
+            opacity: 0.9,
+            transparent: true,
+            emissive: 0xffffff, // Add white emission
+            emissiveIntensity: 0.8 // Higher emission intensity for bubbles
+        });
+
+        // Create and position foam bubbles
+        for (let i = 0; i < numBubbles; i++) {
+            const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
+
+            // Random position within foam zone at the northern end
+            const x = (Math.random() - 0.5) * pool.width;
+            const z = Math.random() * foamLength; // Position above the foam surface
+            const y = foamHeight + 1; // Start just above the foam surface
+
+            bubble.position.set(x, y, z);
+
+            // Add oscillation parameters
+            bubble.userData = {
+                baseY: y,
+                phase: Math.random() * Math.PI * 2, // Random starting phase
+                speed: 5.0, // Oscillation speed
+                emissiveIntensity: 0.8 + Math.random() * 0.4 // Random variation in glow intensity
+            };
+
+            scene.add(bubble);
+            foamBubbles.push(bubble);
+        }
+
+        // Function to update foam bubbles
+        function updateFoamBubbles(dt) {
+            foamBubbles.forEach(bubble => {
+                const data = bubble.userData;
+                // Simple vertical oscillation around foam surface
+                bubble.position.y = data.baseY + Math.sin(data.phase + data.speed * dt) * 1.0; // 1.0 is bubble radius
+                data.phase += dt; // Update phase
+
+                // Pulse the emissive intensity
+                bubble.material.emissiveIntensity = data.emissiveIntensity + Math.sin(data.phase * 2) * 0.2;
+            });
+        }
         // Create wooden material for pool sides
         const woodMaterial = new THREE.MeshStandardMaterial({
             color: 0x00BFFF,  // Deep sky blue color for side walls
@@ -541,7 +592,7 @@
             camera.lookAt(0, 0, 0); // Reset camera orientation
         }
 
-        // Add this function before the animate loop
+        // Update the isInFoam function to use the fixed foam zone
         function isInFoam(position) {
             const waveEnd = pool.length - pool.waveLength;
             return position.z <= waveEnd;
@@ -555,6 +606,9 @@
 
             // Update flowing objects
             updateFlowingObjects(dt);
+
+            // Update foam bubbles
+            updateFoamBubbles(dt);
 
             // Process input
             const turnInput = (leftPressed ? 1 : 0) - (rightPressed ? 1 : 0);
@@ -613,7 +667,7 @@
                 foamOverlay.classList.remove('visible');
             }
 
-            // Boundary check
+            // Boundary check - only check horizontal boundaries, not vertical
             const halfWidth = pool.width / 2;
             if (Math.abs(surfer.x) > halfWidth || surfer.z < 0 || surfer.z > pool.length) {
                 resetGame();
