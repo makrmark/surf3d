@@ -50,24 +50,16 @@
             position: fixed;
             bottom: 50px;
             right: 50px;
+            width: 200px;
+            height: 200px;
+            touch-action: none;
             z-index: 1000;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            -webkit-user-select: none;
-            -ms-user-select: none;
-            touch-action: pan-x pan-y;
-        }
-
-        /* Add a touch-friendly overlay for the nipple area */
-        #nipple::before {
-            content: '';
-            position: absolute;
-            top: -20px;
-            left: -20px;
-            right: -20px;
-            bottom: -20px;
-            touch-action: manipulation;
+            user-select: auto;
+            /* Allow text selection */
+            -webkit-user-select: auto;
+            /* Safari */
+            -ms-user-select: auto;
+            /* IE 10+ */
         }
     </style>
 </head>
@@ -223,8 +215,8 @@
 
         // Create wooden material for pool sides
         const woodMaterial = new THREE.MeshStandardMaterial({
-            color: 0x4a2f1b,
-            roughness: 0.8,
+            color: 0xADD8E6,  // Light blue color
+            roughness: 0.7,
             metalness: 0.1
         });
 
@@ -247,15 +239,19 @@
         // Create end walls
         const backWall = new THREE.Mesh(
             new THREE.BoxGeometry(pool.width + 2 * pool.wallThickness, extendedWallHeight, pool.wallThickness),
-            woodMaterial
+            new THREE.MeshStandardMaterial({
+                color: 0xF4A460,  // Sandy brown color
+                roughness: 0.7,
+                metalness: 0.1
+            })
         );
         backWall.position.set(0, extendedWallHeight / 2 - 10, 0);
 
         const frontWall = new THREE.Mesh(
             new THREE.BoxGeometry(pool.width + 2 * pool.wallThickness, extendedWallHeight, pool.wallThickness),
             new THREE.MeshStandardMaterial({
-                color: 0x800080, // Purple
-                roughness: 0.8,
+                color: 0xE6E6FA,  // Light lavender color
+                roughness: 0.7,
                 metalness: 0.1
             })
         );
