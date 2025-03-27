@@ -86,9 +86,54 @@
             opacity: 1;
         }
 
-        /* Hide help text on mobile screens */
+        #pop-message-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 72px;
+            font-weight: bold;
+            color: red;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-family: Futura, Arial, sans-serif;
+            z-index: 500;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        #pop-message-overlay.visible {
+            opacity: 1;
+        }
+
+        /* Responsive text sizes for popovers */
+        @media screen and (max-width: 768px) {
+            #foam-zone-overlay {
+                font-size: 48px;
+            }
+
+            #pop-message-overlay {
+                font-size: 28px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            #foam-zone-overlay {
+                font-size: 36px;
+            }
+
+            #pop-message-overlay {
+                font-size: 20px;
+            }
+        }
+
+        /* Hide help text and HUD on mobile screens */
         @media screen and (max-width: 768px) {
             #help {
+                display: none;
+            }
+
+            #hud {
                 display: none;
             }
         }
@@ -100,6 +145,7 @@
     <div id="hud"></div>
     <div id="help">Controls: Left/Right arrows to turn, Up/Down arrows to shift position on board</div>
     <div id="foam-zone-overlay">Foam Zoned!</div>
+    <div id="pop-message-overlay"></div>
     <div id="nipple"></div>
     <script type="importmap">
         {
@@ -677,21 +723,7 @@
 
         // Add pop counter and message overlay
         let beachBallsPopped = 0;
-        const popMessageOverlay = document.createElement('div');
-        popMessageOverlay.style.position = 'fixed';
-        popMessageOverlay.style.top = '50%';
-        popMessageOverlay.style.left = '50%';
-        popMessageOverlay.style.transform = 'translate(-50%, -50%)';
-        popMessageOverlay.style.fontSize = '72px';
-        popMessageOverlay.style.fontWeight = 'bold';
-        popMessageOverlay.style.color = 'red';
-        popMessageOverlay.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.5)';
-        popMessageOverlay.style.fontFamily = 'Futura, Arial, sans-serif';
-        popMessageOverlay.style.zIndex = '500';
-        popMessageOverlay.style.pointerEvents = 'none';
-        popMessageOverlay.style.opacity = '0';
-        popMessageOverlay.style.transition = 'opacity 0.3s ease-in-out';
-        document.body.appendChild(popMessageOverlay);
+        const popMessageOverlay = document.getElementById('pop-message-overlay');
 
         // Create particle system for pop effects
         const particleGeometry = new THREE.BufferGeometry();
@@ -778,9 +810,9 @@
         function showPopMessage() {
             beachBallsPopped++;
             popMessageOverlay.textContent = `${beachBallsPopped} Popped!`;
-            popMessageOverlay.style.opacity = '1';
+            popMessageOverlay.classList.add('visible');
             setTimeout(() => {
-                popMessageOverlay.style.opacity = '0';
+                popMessageOverlay.classList.remove('visible');
             }, 1000);
         }
 
