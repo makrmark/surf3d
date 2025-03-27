@@ -312,48 +312,93 @@
             metalness: 0.1
         });
 
+        // Create glass material for wall tops
+        const glassMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            metalness: 0.0,
+            roughness: 0.1,
+            transmission: 0.5, // Makes it semi-transparent
+            thickness: 0.5,    // Adds some depth to the glass
+            clearcoat: 1.0,    // Adds a glossy layer
+            clearcoatRoughness: 0.1,
+            transparent: true,
+            opacity: 0.8
+        });
+
         // Adjust wall height to extend 14m lower (10m + 4m for tilt)
         const extendedWallHeight = pool.wallHeight + 14;
+        const glassHeight = 4; // Height of the glass section (increased from 2m to 4m)
+        const solidWallHeight = extendedWallHeight - glassHeight; // Height of the solid wall section
 
-        // Create side walls
-        const westWall = new THREE.Mesh(
-            new THREE.BoxGeometry(pool.wallThickness, extendedWallHeight, pool.length),
+        // Create side walls (solid part)
+        const westWallSolid = new THREE.Mesh(
+            new THREE.BoxGeometry(pool.wallThickness, solidWallHeight, pool.length),
             woodMaterial
         );
-        westWall.position.set(-pool.width / 2 - pool.wallThickness / 2, extendedWallHeight / 2 - 14, pool.length / 2);
+        westWallSolid.position.set(-pool.width / 2 - pool.wallThickness / 2, solidWallHeight / 2 - 14, pool.length / 2);
 
-        const eastWall = new THREE.Mesh(
-            new THREE.BoxGeometry(pool.wallThickness, extendedWallHeight, pool.length),
+        const eastWallSolid = new THREE.Mesh(
+            new THREE.BoxGeometry(pool.wallThickness, solidWallHeight, pool.length),
             woodMaterial
         );
-        eastWall.position.set(pool.width / 2 + pool.wallThickness / 2, extendedWallHeight / 2 - 14, pool.length / 2);
+        eastWallSolid.position.set(pool.width / 2 + pool.wallThickness / 2, solidWallHeight / 2 - 14, pool.length / 2);
 
-        // Create end walls
-        const northWall = new THREE.Mesh(
-            new THREE.BoxGeometry(pool.width + 2 * pool.wallThickness, extendedWallHeight, pool.wallThickness),
+        // Create side walls (glass part)
+        const westWallGlass = new THREE.Mesh(
+            new THREE.BoxGeometry(pool.wallThickness, glassHeight, pool.length),
+            glassMaterial
+        );
+        westWallGlass.position.set(-pool.width / 2 - pool.wallThickness / 2, solidWallHeight + glassHeight / 2 - 14, pool.length / 2);
+
+        const eastWallGlass = new THREE.Mesh(
+            new THREE.BoxGeometry(pool.wallThickness, glassHeight, pool.length),
+            glassMaterial
+        );
+        eastWallGlass.position.set(pool.width / 2 + pool.wallThickness / 2, solidWallHeight + glassHeight / 2 - 14, pool.length / 2);
+
+        // Create end walls (solid part)
+        const northWallSolid = new THREE.Mesh(
+            new THREE.BoxGeometry(pool.width + 2 * pool.wallThickness, solidWallHeight, pool.wallThickness),
             new THREE.MeshStandardMaterial({
                 color: 0xFF4500,  // Orange red color (north end)
                 roughness: 0.7,
                 metalness: 0.1
             })
         );
-        northWall.position.set(0, extendedWallHeight / 2 - 14, 0);
+        northWallSolid.position.set(0, solidWallHeight / 2 - 14, 0);
 
-        const southWall = new THREE.Mesh(
-            new THREE.BoxGeometry(pool.width + 2 * pool.wallThickness, extendedWallHeight, pool.wallThickness),
+        const southWallSolid = new THREE.Mesh(
+            new THREE.BoxGeometry(pool.width + 2 * pool.wallThickness, solidWallHeight, pool.wallThickness),
             new THREE.MeshStandardMaterial({
                 color: 0xFFD700,  // Gold color (south end)
                 roughness: 0.7,
                 metalness: 0.1
             })
         );
-        southWall.position.set(0, extendedWallHeight / 2 - 14, pool.length);
+        southWallSolid.position.set(0, solidWallHeight / 2 - 14, pool.length);
+
+        // Create end walls (glass part)
+        const northWallGlass = new THREE.Mesh(
+            new THREE.BoxGeometry(pool.width + 2 * pool.wallThickness, glassHeight, pool.wallThickness),
+            glassMaterial
+        );
+        northWallGlass.position.set(0, solidWallHeight + glassHeight / 2 - 14, 0);
+
+        const southWallGlass = new THREE.Mesh(
+            new THREE.BoxGeometry(pool.width + 2 * pool.wallThickness, glassHeight, pool.wallThickness),
+            glassMaterial
+        );
+        southWallGlass.position.set(0, solidWallHeight + glassHeight / 2 - 14, pool.length);
 
         // Add walls to scene
-        scene.add(westWall);
-        scene.add(eastWall);
-        scene.add(northWall);
-        scene.add(southWall);
+        scene.add(westWallSolid);
+        scene.add(eastWallSolid);
+        scene.add(westWallGlass);
+        scene.add(eastWallGlass);
+        scene.add(northWallSolid);
+        scene.add(southWallSolid);
+        scene.add(northWallGlass);
+        scene.add(southWallGlass);
 
         // Adjust pool floor to align with the base of the walls
         poolBottom.position.y = -14; // Align with the base of the extended walls
@@ -599,12 +644,234 @@
             surfer.reset(); // Reset surfer's position and state
             camera.position.set(0, 10, pool.length / 2); // Reset camera position
             camera.lookAt(0, 0, 0); // Reset camera orientation
+            beachBallsPopped = 0; // Reset beach balls popped counter
         }
 
         // Update the isInFoam function to use the fixed foam zone
         function isInFoam(position) {
             const waveEnd = pool.length - pool.waveLength;
             return position.z <= waveEnd;
+        }
+
+        // Create beach balls
+        const beachBalls = [];
+        const beachBallGeometry = new THREE.SphereGeometry(2.0, 16, 16); // 4m diameter (doubled from 2m)
+        const beachBallMaterial = new THREE.MeshStandardMaterial({
+            color: 0xff0000, // Red color
+            roughness: 0.2,  // Lower roughness for more shininess
+            metalness: 0.8  // Higher metalness for more reflectivity
+        });
+
+        // Function to create a new beach ball
+        function createBeachBall() {
+            const beachBall = new THREE.Mesh(beachBallGeometry, beachBallMaterial);
+            // Position at south end of wave
+            beachBall.position.set(
+                (Math.random() - 0.5) * pool.width, // Random x position
+                0, // Will be updated to wave height
+                pool.length // South end
+            );
+            scene.add(beachBall);
+            beachBalls.push(beachBall);
+        }
+
+        // Add pop counter and message overlay
+        let beachBallsPopped = 0;
+        const popMessageOverlay = document.createElement('div');
+        popMessageOverlay.style.position = 'fixed';
+        popMessageOverlay.style.top = '50%';
+        popMessageOverlay.style.left = '50%';
+        popMessageOverlay.style.transform = 'translate(-50%, -50%)';
+        popMessageOverlay.style.fontSize = '72px';
+        popMessageOverlay.style.fontWeight = 'bold';
+        popMessageOverlay.style.color = 'red';
+        popMessageOverlay.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.5)';
+        popMessageOverlay.style.fontFamily = 'Futura, Arial, sans-serif';
+        popMessageOverlay.style.zIndex = '500';
+        popMessageOverlay.style.pointerEvents = 'none';
+        popMessageOverlay.style.opacity = '0';
+        popMessageOverlay.style.transition = 'opacity 0.3s ease-in-out';
+        document.body.appendChild(popMessageOverlay);
+
+        // Create particle system for pop effects
+        const particleGeometry = new THREE.BufferGeometry();
+        const particleCount = 50; // Number of particles per pop
+        const particlePositions = new Float32Array(particleCount * 3);
+        const particleVelocities = [];
+        const particleLifetimes = [];
+        const particleMaterial = new THREE.PointsMaterial({
+            color: 0xff0000, // Red color like the beach balls
+            size: 0.2, // Small particle size
+            transparent: true,
+            opacity: 1.0,
+            blending: THREE.AdditiveBlending // Makes particles glow
+        });
+        const particles = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particles);
+
+        // Initialize particle geometry with empty positions
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+        particles.visible = false; // Start with particles hidden
+
+        // Function to create pop effect
+        function createPopEffect(position) {
+            // Reset particle positions and velocities
+            for (let i = 0; i < particleCount; i++) {
+                // Random position around the beach ball
+                const radius = 2.0; // Same as beach ball radius
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI * 2;
+
+                particlePositions[i * 3] = position.x + radius * Math.sin(theta) * Math.cos(phi);
+                particlePositions[i * 3 + 1] = position.y + radius * Math.sin(theta) * Math.sin(phi);
+                particlePositions[i * 3 + 2] = position.z + radius * Math.cos(theta);
+
+                // Random velocity outward
+                const speed = 5 + Math.random() * 5; // 5-10 m/s
+                particleVelocities[i] = {
+                    x: (particlePositions[i * 3] - position.x) * speed,
+                    y: (particlePositions[i * 3 + 1] - position.y) * speed,
+                    z: (particlePositions[i * 3 + 2] - position.z) * speed
+                };
+
+                // Random lifetime between 0.5 and 1.5 seconds
+                particleLifetimes[i] = 0.5 + Math.random();
+            }
+
+            // Update geometry with new positions
+            particleGeometry.attributes.position.needsUpdate = true;
+
+            // Make particles visible
+            particles.visible = true;
+        }
+
+        // Function to update particles
+        function updateParticles(dt) {
+            if (!particles.visible) return;
+
+            let allDead = true;
+            for (let i = 0; i < particleCount; i++) {
+                if (particleLifetimes[i] > 0) {
+                    allDead = false;
+                    // Update position
+                    particlePositions[i * 3] += particleVelocities[i].x * dt;
+                    particlePositions[i * 3 + 1] += particleVelocities[i].y * dt;
+                    particlePositions[i * 3 + 2] += particleVelocities[i].z * dt;
+
+                    // Update lifetime and opacity
+                    particleLifetimes[i] -= dt;
+                    const opacity = particleLifetimes[i] / (0.5 + Math.random());
+                    particleMaterial.opacity = opacity;
+                }
+            }
+
+            // Update geometry with new positions
+            particleGeometry.attributes.position.needsUpdate = true;
+
+            // Hide particles when all are dead
+            if (allDead) {
+                particles.visible = false;
+            }
+        }
+
+        // Update the showPopMessage function to include particle effect
+        function showPopMessage() {
+            beachBallsPopped++;
+            popMessageOverlay.textContent = `${beachBallsPopped} Popped!`;
+            popMessageOverlay.style.opacity = '1';
+            setTimeout(() => {
+                popMessageOverlay.style.opacity = '0';
+            }, 1000);
+        }
+
+        // Function to check collision between surfboard and beach ball
+        function checkCollision(surfboardPos, beachBallPos) {
+            // Get surfboard dimensions from surfer instance
+            const boardLength = surfer.boardLength;
+            const boardWidth = surfer.boardWidth;
+            const ballRadius = 2.0; // Beach ball radius (4m diameter / 2)
+
+            // Calculate surfboard corners in local space
+            const corners = [
+                { x: -boardWidth / 2, z: -boardLength / 2 },
+                { x: boardWidth / 2, z: -boardLength / 2 },
+                { x: boardWidth / 2, z: boardLength / 2 },
+                { x: -boardWidth / 2, z: boardLength / 2 }
+            ];
+
+            // Rotate corners based on surfer's theta
+            const rotatedCorners = corners.map(corner => {
+                return {
+                    x: corner.x * Math.cos(surfer.theta) - corner.z * Math.sin(surfer.theta) + surfboardPos.x,
+                    y: surfboardPos.y,
+                    z: corner.x * Math.sin(surfer.theta) + corner.z * Math.cos(surfer.theta) + surfboardPos.z
+                };
+            });
+
+            // Check if any corner is within ball radius
+            for (const corner of rotatedCorners) {
+                const dx = corner.x - beachBallPos.x;
+                const dy = corner.y - beachBallPos.y;
+                const dz = corner.z - beachBallPos.z;
+                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                if (distance < ballRadius) {
+                    return true;
+                }
+            }
+
+            // Check if ball center is within the rotated board rectangle
+            const localBallX = (beachBallPos.x - surfboardPos.x) * Math.cos(-surfer.theta) -
+                (beachBallPos.z - surfboardPos.z) * Math.sin(-surfer.theta);
+            const localBallZ = (beachBallPos.x - surfboardPos.x) * Math.sin(-surfer.theta) +
+                (beachBallPos.z - surfboardPos.z) * Math.cos(-surfer.theta);
+
+            if (Math.abs(localBallX) <= boardWidth / 2 && Math.abs(localBallZ) <= boardLength / 2) {
+                return true;
+            }
+
+            return false;
+        }
+
+        // Update the beach ball collision handling in updateBeachBalls
+        function updateBeachBalls(dt) {
+            const flowSpeed = 10; // Same speed as water flow
+            const k = 2 * Math.PI / pool.waveLength; // Wave number
+
+            // Spawn new beach ball every 5 seconds
+            if (Math.random() < dt / 5) {
+                createBeachBall();
+            }
+
+            // Get surfboard position
+            const surfboardPos = surfer.getBoardPosition();
+
+            // Update existing beach balls
+            for (let i = beachBalls.length - 1; i >= 0; i--) {
+                const beachBall = beachBalls[i];
+
+                // Move north
+                beachBall.position.z -= flowSpeed * dt;
+
+                // Calculate the tilt based on z position
+                const tilt = -(pool.tiltHeight * (beachBall.position.z / pool.length));
+
+                // Update y position to follow the wave profile with tilt
+                beachBall.position.y = pool.waveAmplitude * Math.cos(k * (pool.length - beachBall.position.z)) + tilt;
+
+                // Check for collision with surfboard
+                if (checkCollision(surfboardPos, beachBall.position)) {
+                    createPopEffect(beachBall.position); // Create particle effect at ball position
+                    scene.remove(beachBall);
+                    beachBalls.splice(i, 1);
+                    showPopMessage();
+                }
+
+                // Remove beach ball if it reaches the north end of the wave
+                if (beachBall.position.z <= pool.length - pool.waveLength) {
+                    scene.remove(beachBall);
+                    beachBalls.splice(i, 1);
+                }
+            }
         }
 
         // Animation loop
@@ -618,6 +885,12 @@
 
             // Update foam bubbles
             updateFoamBubbles(dt);
+
+            // Update beach balls
+            updateBeachBalls(dt);
+
+            // Update particles
+            updateParticles(dt);
 
             // Process input
             const turnInput = (leftPressed ? 1 : 0) - (rightPressed ? 1 : 0);
@@ -663,6 +936,7 @@
                 - Drag: ${dragMagnitude.toFixed(1)}<br>
                 - Water: ${waterMagnitude.toFixed(1)}<br>
                 Net Velocity: ${netVelocityMagnitude.toFixed(2)} m/s<br>
+                Beachballs Popped: ${beachBallsPopped}<br>
             `;
 
             // Check if surfer is in foam zone
