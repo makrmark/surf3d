@@ -1,35 +1,28 @@
-name: Cache Busting and Publish
-
+name: Build and Deploy
 on:
   push:
     branches:
-      - main
-
+      - main  # Trigger on pushes to the main branch
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-        with:
-          ref: main
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          python-version: '3.x'
+          node-version: '16'  # Use a version compatible with your project
 
       - name: Install dependencies
-        run: pip install beautifulsoup4
+        run: npm install  # Install Parcel and other dependencies
 
-      - name: Run cache busting script
-        run: python cache-buster.py
+      - name: Build with Parcel
+        run: npx parcel build index.html --out-dir dist  # Build your project into "dist"
 
-      - name: Commit and push to published branch
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git checkout -B published
-          git add .
-          git commit -m "Update file hashes for cache busting" || echo "No changes to commit"
-          git push --force origin published
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist  # Deploy the contents of "dist" to gh-pages
