@@ -4,6 +4,7 @@ const { htmlPlugin } = require('@craftamap/esbuild-plugin-html');
 esbuild.build({
     outdir: 'dist',
     bundle: true,
+    metafile: true,
     plugins: [
         htmlPlugin({
             files: [
