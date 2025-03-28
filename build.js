@@ -5,9 +5,9 @@ esbuild.build({
     entryPoints: ['main.js'],
     outdir: 'dist',
     bundle: true,
-    format: 'esm',
+    format: 'esm', // Ensure ES module output
     metafile: true,
-    external: ['three'], // Exclude "three" from bundling
+    external: ['three'],
     plugins: [
         htmlPlugin({
             files: [
@@ -15,7 +15,7 @@ esbuild.build({
                     entryPoints: ['main.js'],
                     filename: 'index.html',
                     htmlTemplate: 'index.html',
-                    scriptType: 'module',
+                    scriptType: 'module', // Enforce module type
                 },
             ],
         }),
@@ -23,9 +23,10 @@ esbuild.build({
     entryNames: '[dir]/[name]-[hash]',
     chunkNames: '[name]-[hash]',
     assetNames: '[name]-[hash]',
-    minify: false,
+    minify: false, // Keep off for now
 }).then((result) => {
     console.log('Build completed. Outputs:', Object.keys(result.metafile.outputs));
+    console.log('Main file content:', require('fs').readFileSync(Object.keys(result.metafile.outputs).find(f => f.includes('main')), 'utf8'));
 }).catch((error) => {
     console.error('Build failed:', error);
     process.exit(1);
