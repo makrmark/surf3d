@@ -1,9 +1,8 @@
 <html>
-
 <head>
-    <title>Surf Game</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <style>
+<title>Surf Game</title>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<style>
         body {
             margin: 0;
             padding: 0;
@@ -139,23 +138,22 @@
         }
     </style>
 </head>
-
 <body>
-    <div id="container"></div>
-    <div id="hud"></div>
-    <div id="help">Controls: Left/Right arrows to turn, Up/Down arrows to shift position on board</div>
-    <div id="foam-zone-overlay">Foam Zoned!</div>
-    <div id="pop-message-overlay"></div>
-    <div id="nipple"></div>
-    <script type="importmap">
+<div id="container"></div>
+<div id="hud"></div>
+<div id="help">Controls: Left/Right arrows to turn, Up/Down arrows to shift position on board</div>
+<div id="foam-zone-overlay">Foam Zoned!</div>
+<div id="pop-message-overlay"></div>
+<div id="nipple"></div>
+<script type="importmap">
         {
             "imports": {
                 "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
             }
         }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.9.0/dist/nipplejs.min.js"></script>
-    <script type="module">
+<script src="https://cdn.jsdelivr.net/npm/nipplejs@0.9.0/dist/nipplejs.min.js"></script>
+<script type="module">
         import * as THREE from 'three';
         import { Pool } from './Pool.js';
         import { Surfer } from './Surfer.js';
@@ -994,5 +992,4 @@
         animate();
     </script>
 </body>
-
 </html>
