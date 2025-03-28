@@ -1,0 +1,35 @@
+name: Cache Busting and Publish
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install beautifulsoup4
+
+      - name: Run cache busting script
+        run: python cache-buster.py
+
+      - name: Commit and push to published branch
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git checkout -B published
+          git add .
+          git commit -m "Update file hashes for cache busting" || echo "No changes to commit"
+          git push --force origin published
