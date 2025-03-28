@@ -2,6 +2,7 @@ const esbuild = require('esbuild');
 const { htmlPlugin } = require('@craftamap/esbuild-plugin-html');
 
 esbuild.build({
+    entryPoints: ['main.js'], // Explicitly bundle main.js
     outdir: 'dist',
     bundle: true,
     format: 'esm',
@@ -11,8 +12,8 @@ esbuild.build({
         htmlPlugin({
             files: [
                 {
-                    filename: 'index.html',      // Output file in dist
-                    htmlTemplate: 'index.html',  // Source file
+                    filename: 'index.html',
+                    htmlTemplate: 'index.html',
                 },
             ],
         }),
