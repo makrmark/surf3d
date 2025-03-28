@@ -1,11 +1,8 @@
 {
-  "name": "3dsurfer",
-  "source": "index.html",
-  "scripts": {
-    "start": "parcel",
-    "build": "parcel build"
-  },
+  "name": "surf3d",
+  "version": "1.0.0",
   "devDependencies": {
-    "parcel": "latest"
+    "esbuild": "^0.14.0",
+    "@craftamap/esbuild-plugin-html": "^0.4.0"
   }
 }

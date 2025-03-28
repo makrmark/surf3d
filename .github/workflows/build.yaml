@@ -1,8 +1,10 @@
 name: Build and Deploy
+
 on:
   push:
     branches:
-      - main # Trigger on pushes to the main branch
+      - main
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -13,16 +15,16 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "16" # Use a version compatible with your project
+          node-version: "16"
 
       - name: Install dependencies
-        run: npm install # Install Parcel and other dependencies
+        run: npm install
 
-      - name: Build with Parcel
-        run: npx parcel build index.html --dist-dir dist # Build your project into "dist"
+      - name: Build with esbuild
+        run: node build.js
 
-      - name: Deploy to gh-pages
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist # Deploy the contents of "dist" to gh-pages
+          publish_dir: ./dist
