@@ -23,7 +23,7 @@ esbuild.build({
     entryNames: '[dir]/[name]-[hash]',
     chunkNames: '[name]-[hash]',
     assetNames: '[name]-[hash]',
-    minify: true,
+    minify: false,
 }).then((result) => {
     console.log('Build completed. Outputs:', Object.keys(result.metafile.outputs));
 }).catch((error) => {
