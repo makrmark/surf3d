@@ -2,16 +2,19 @@ const esbuild = require('esbuild');
 const { htmlPlugin } = require('@craftamap/esbuild-plugin-html');
 
 esbuild.build({
+    entryPoints: ['main.js'], // Main entry point for the module
     outdir: 'dist',
     bundle: true,
+    format: 'esm', // Output as ES modules to match type="module"
     metafile: true,
     plugins: [
         htmlPlugin({
             files: [
                 {
-                    entryPoints: ['main.js'], // Ensure main.js is bundled
+                    entryPoints: ['main.js'], // Also specify here for HTML plugin
                     filename: 'index.html',   // Output HTML file
                     htmlTemplate: 'index.html', // Source HTML file
+                    scriptType: 'module',     // Explicitly handle as module
                 },
             ],
         }),
