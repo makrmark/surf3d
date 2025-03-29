@@ -114,7 +114,7 @@ const poolBottom = new THREE.Mesh(poolBottomGeometry, poolBottomMaterial);
 
 // Rotate and position the bottom
 poolBottom.rotation.x = -Math.PI / 2; // Make it horizontal
-poolBottom.position.set(0, -10, pool.length / 2); // Align with the base of the extended walls
+poolBottom.position.set(0, -14, pool.length / 2); // Align with the base of the extended walls
 scene.add(poolBottom);
 
 // Create foam as a surface
@@ -193,6 +193,7 @@ function updateFoamBubbles(dt) {
         bubble.material.emissiveIntensity = data.emissiveIntensity + Math.sin(data.phase * 2) * 0.2;
     });
 }
+
 // Create wooden material for pool sides
 const woodMaterial = new THREE.MeshStandardMaterial({
     color: 0x00BFFF,  // Deep sky blue color for side walls
@@ -354,59 +355,80 @@ function addClouds() {
 // Call the function to add clouds
 addClouds();
 
-// Define the profile of the surfboard
-const surfboardProfile = [];
-// Use dimensions from surfer instance
-const boardLength = surfer.boardLength;
-const boardWidth = surfer.boardWidth;
-const boardThickness = surfer.boardThickness;
+// Create a simple surfboard from primitives
+const surfboardGroup = new THREE.Group();
 
-// Create a profile for the surfboard (tapered ends)
-surfboardProfile.push(new THREE.Vector2(0, -boardLength / 2));
-for (let i = 0; i <= 20; i++) {
-    const t = i / 20;
-    const x = boardWidth * Math.sin(Math.PI * t); // Tapered oval shape
-    const y = -boardLength / 2 + t * boardLength; // Move along the length
-    surfboardProfile.push(new THREE.Vector2(x, y));
-}
-surfboardProfile.push(new THREE.Vector2(0, boardLength / 2)); // Top tip
+// Create the main board shape using a box
+const boardGeometry = new THREE.BoxGeometry(surfer.boardWidth, surfer.boardThickness, surfer.boardLength);
+const boardMaterial = new THREE.MeshStandardMaterial({
+    color: 0xFFFFFF,      // Pure white
+    roughness: 0.05,      // Very smooth
+    metalness: 0.2,       // Slight metallic sheen for gelcoat look
+    envMapIntensity: 1.5, // Enhance reflections
+    clearcoat: 1.0,       // Add gelcoat layer
+    clearcoatRoughness: 0.1 // Make gelcoat glossy
+});
+const surfboard = new THREE.Mesh(boardGeometry, boardMaterial);
 
-// Create the surfboard geometry using LatheGeometry
-const surfboardGeometry = new THREE.LatheGeometry(surfboardProfile, 32); // 32 segments for smoothness
+// Add a circular end cap at the front
+const endCapGeometry = new THREE.CylinderGeometry(
+    surfer.boardWidth / 2,  // top radius (half the board width)
+    surfer.boardWidth / 2,  // bottom radius
+    surfer.boardThickness, // height (same as board thickness)
+    32  // more segments for smoother circle
+);
+// Rotate cylinder to lie flat on board
+endCapGeometry.rotateY(Math.PI / 2);
+const endCapMaterial = new THREE.MeshStandardMaterial({
+    color: 0xFFFFFF,      // Pure white
+    roughness: 0.05,      // Very smooth
+    metalness: 0.2,       // Slight metallic sheen for gelcoat look
+    envMapIntensity: 1.5, // Enhance reflections
+    clearcoat: 1.0,       // Add gelcoat layer
+    clearcoatRoughness: 0.1 // Make gelcoat glossy
+});
+const endCap = new THREE.Mesh(endCapGeometry, endCapMaterial);
+// Position at front of board (negative Z)
+endCap.position.set(0, 0, -surfer.boardLength / 2);
+surfboard.add(endCap);
 
-// Translate the geometry so the pivot point is 3/4 back from the front
-surfboardGeometry.translate(0, 0, -boardLength * (1 / 4)); // Move the geometry forward
+// Add the board to the group
+surfboardGroup.add(surfboard);
 
-// Create the surfboard material and mesh
-const surfboardMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
-const surfboard = new THREE.Mesh(surfboardGeometry, surfboardMaterial);
-
-// Rotate the surfboard to lay flat
-surfboard.rotation.x = Math.PI / 2;
+// Add to the scene
+scene.add(surfboardGroup);
 
 // Create the surfer's left arm
-const armLength = 1.0; // 100cm
-const armGeometry = new THREE.CylinderGeometry(0.05, 0.05, armLength, 8); // Made thicker
+// Notes on orientation:
+// - Surfboard faces negative Z direction
+// - Arm is a cylinder where the circular ends are shoulder and hand
+// - Shoulder (pivot point) should be at positive Z
+// - Hand should be at negative Z (same direction as surfboard)
+// - Arm will pivot left/right ±5 degrees when turning
+
+const armLength = 0.7; // 70cm
+// Create cylinder where the circular faces will be shoulder/hand
+// By default cylinder is along Y with circular faces on top/bottom
+const armGeometry = new THREE.CylinderGeometry(0.05, 0.05, armLength, 8);
 const armMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 }); // Black
 const arm = new THREE.Mesh(armGeometry, armMaterial);
-arm.position.set(0, 0, 0); // Position at shoulder pivot (one circular end at pivot)
+// Move the arm so its shoulder end (bottom circular face) is at the pivot point
+arm.position.y = armLength / 2;
 
-// Create a pivot point at the shoulder
+// Create a shoulder pivot point
 const shoulderPivot = new THREE.Group();
 shoulderPivot.add(arm);
 
-// Create the hand
-const handGeometry = new THREE.SphereGeometry(0.1, 4, 4); // Made bigger
+// Create the hand at the negative Z end (front end)
+const handGeometry = new THREE.SphereGeometry(0.07); // 7cm radius sphere
 const handMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 }); // Brown
 const hand = new THREE.Mesh(handGeometry, handMaterial);
-hand.position.y = armLength / 2; // Position at end of arm (opposite to shoulder)
+// Position hand at the top circular face
+hand.position.y = armLength / 2;
 arm.add(hand);
 
 // Add the shoulder pivot to the surfboard
-surfboard.add(shoulderPivot);
-
-// Add the surfboard to the scene
-scene.add(surfboard);
+surfboardGroup.add(shoulderPivot);
 
 // Set initial camera position with no smoothing
 updateCamera(1.0);
@@ -481,10 +503,10 @@ function updateCamera(smooth_factor) {
     const CAMERA_TILT = 0;// 0.2;
 
     // Position camera directly above surfer position in board space
-    const headOffset = new THREE.Vector3(0, surfer.height, 0);
-    const cameraLocalPos = surfboard.worldToLocal(camera.position.clone());
+    const headOffset = new THREE.Vector3(0, surfer.height, 1);
+    const cameraLocalPos = surfboardGroup.worldToLocal(camera.position.clone());
     cameraLocalPos.copy(headOffset);
-    const cameraWorldPos = surfboard.localToWorld(cameraLocalPos);
+    const cameraWorldPos = surfboardGroup.localToWorld(cameraLocalPos);
 
     // Smooth camera movement
     camera.position.lerp(cameraWorldPos, smooth_factor);
@@ -495,21 +517,22 @@ function updateCamera(smooth_factor) {
     lookDir.y -= CAMERA_TILT;
 
     // Transform look direction to world space
-    const worldLookDir = surfboard.localToWorld(lookDir.clone()).sub(surfboard.position);
+    const worldLookDir = surfboardGroup.localToWorld(lookDir.clone()).sub(surfboardGroup.position);
     const targetPos = camera.position.clone().add(worldLookDir);
     camera.lookAt(targetPos);
 }
 
 // Update the surfboard's position and rotation to pivot around the surfer
 function updateSurfboard() {
-    surfboard.position.copy(surfer.getBoardPosition());
-    surfboard.rotation.copy(surfer.getBoardPitch());
+    // Update main surfboard
+    surfboardGroup.position.copy(surfer.getBoardPosition());
+    surfboardGroup.rotation.copy(surfer.getBoardPitch());
 
     // Update shoulder pivot position relative to surfboard
     shoulderPivot.position.set(
         -0.3,  // 30cm to the left of surfboard center
         1.5,   // 1.5m above surfboard
-        0      // At surfboard center
+        1.0    // 1m back from surfboard center
     );
 }
 
@@ -519,11 +542,10 @@ function updateArm() {
     const turnInput = (leftPressed ? 1 : 0) - (rightPressed ? 1 : 0);
     const armRotation = turnInput * (15 * Math.PI / 180); // 15 degrees in radians
 
-    // Apply base rotation and turn rotation
-    arm.rotation.x = -Math.PI / 2; // Pivot down 90 degrees
-    arm.rotation.y = 0;            // Point forward
-    arm.rotation.z = armRotation; // Apply turn rotation
-
+    // Apply base rotation and turn rotation to the shoulder pivot
+    shoulderPivot.rotation.x = -Math.PI / 2; // Pivot down 90 degrees
+    shoulderPivot.rotation.y = 0;            // Point forward
+    shoulderPivot.rotation.z = armRotation;  // Apply turn rotation
 }
 
 // Function to reset the game

@@ -19,8 +19,8 @@ export class Surfer {
 
         // Add surfboard dimensions
         this.boardLength = 2.5;  // 2.5m long
-        this.boardWidth = 0.45;  // Half of 90cm wide
-        this.boardThickness = 0.05;  // 5cm thick
+        this.boardWidth = 1;  // 1m wide
+        this.boardThickness = 0.10;  // 10cm thick
         this.boardArea = 0.7 * this.boardLength * this.boardWidth; // Area in m^2 (rough est)
         this.boardLiftCoefficient = 0.05; // Lift coefficient
         this.waterDensity = 1025; // Salt Water density in kg/m^3
@@ -202,14 +202,22 @@ export class Surfer {
 
     getBoardPitch() {
         const slopeAngle = this.calculateWaveSlope(); // Use calculateWaveSlope to get the slope angle
-        let pitch = slopeAngle * Math.cos(this.theta);
+
+        // The slope angle directly gives us the pitch we want since the board's Y-axis
+        // is now aligned with the up direction
+        let pitch = slopeAngle;
+
+        // Apply heading-based component to reduce pitch when turning
+        pitch *= Math.cos(this.theta);
+
+        // Apply base angle and stance adjustments
+        pitch += (10 * Math.PI / 180); // Neutral: -15 degrees
         if (this.positionOnBoard === 1) {
-            pitch += (5 * Math.PI / 180); // Forward: +5 degrees
+            pitch -= (5 * Math.PI / 180); // Forward: +5 degrees
         } else if (this.positionOnBoard === -1) {
-            pitch += (25 * Math.PI / 180); // Back: +25 degrees
-        } else {
-            pitch += (15 * Math.PI / 180); // Neutral: +15 degrees
+            pitch += (5 * Math.PI / 180); // Back: -5 degrees
         }
+
         return new THREE.Euler(pitch, this.theta, 0, 'YXZ');
     }
 
