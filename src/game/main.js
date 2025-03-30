@@ -355,6 +355,124 @@ function addClouds() {
 // Call the function to add clouds
 addClouds();
 
+// Create stadium seating around the pool
+function createStadiumSeating() {
+    const seatingSections = new THREE.Group();
+
+    // Parameters for the seating and deck
+    const deckWidth = 3; // Width of the walkway around the pool
+    const rowHeight = 1; // Height of each seating row
+    const rowDepth = 2; // Depth of each row
+    const numRows = 8; // Number of seating rows
+    const deckHeight = 0.2; // Height of the deck
+    const baseHeight = 6; // Start at the bottom of the glass walls
+    const stairWidth = 2;
+
+    // Colors for seats (vibrant stadium colors)
+    const seatColors = [0xFF0000, 0x0000FF, 0xFFFF00, 0x00FF00, 0xFF00FF, 0x00FFFF, 0xFF8C00, 0xFF1493];
+
+    // Create a single section (will be rotated for different sides)
+    const createSection = (direction) => {
+        const sectionGroup = new THREE.Group();
+        
+        // Create deck
+        const deckMaterial = new THREE.MeshPhongMaterial({
+            color: 0x808080,
+            specular: 0x333333,
+            shininess: 30
+        });
+
+        const deckGeometry = new THREE.BoxGeometry(pool.width + 2 * pool.wallThickness, deckHeight, deckWidth);
+        const deck = new THREE.Mesh(deckGeometry, deckMaterial);
+        deck.position.set(0, baseHeight + deckHeight / 2, deckWidth / 2);
+        sectionGroup.add(deck);
+
+        // Create seating rows
+        for (let row = 0; row < numRows; row++) {
+            const seatGeometry = new THREE.BoxGeometry(
+                pool.width + 2 * pool.wallThickness,
+                rowHeight,
+                rowDepth
+            );
+
+            const seatMaterial = new THREE.MeshPhongMaterial({
+                color: seatColors[row % seatColors.length],
+                specular: 0x333333,
+                shininess: 30
+            });
+
+            const seatRow = new THREE.Mesh(seatGeometry, seatMaterial);
+            seatRow.position.set(
+                0,
+                baseHeight + deckHeight + row * rowHeight + rowHeight / 2,
+                deckWidth + row * rowDepth + rowDepth / 2
+            );
+            sectionGroup.add(seatRow);
+        }
+
+        // Add stairs on both ends
+        const stairGeometry = new THREE.BoxGeometry(
+            stairWidth,
+            numRows * rowHeight,
+            numRows * rowDepth
+        );
+        const stairMaterial = new THREE.MeshPhongMaterial({
+            color: 0x808080,
+            specular: 0x333333,
+            shininess: 30
+        });
+
+        // Left stairs
+        const leftStairs = new THREE.Mesh(stairGeometry, stairMaterial);
+        leftStairs.position.set(
+            -(pool.width + 2 * pool.wallThickness)/2 - stairWidth/2,
+            baseHeight + deckHeight + (numRows * rowHeight)/2,
+            deckWidth + (numRows * rowDepth)/2
+        );
+        sectionGroup.add(leftStairs);
+
+        // Right stairs
+        const rightStairs = new THREE.Mesh(stairGeometry, stairMaterial);
+        rightStairs.position.set(
+            (pool.width + 2 * pool.wallThickness)/2 + stairWidth/2,
+            baseHeight + deckHeight + (numRows * rowHeight)/2,
+            deckWidth + (numRows * rowDepth)/2
+        );
+        sectionGroup.add(rightStairs);
+
+        // Position and rotate the section based on direction
+        switch(direction) {
+            case 'north':
+                sectionGroup.position.z = pool.length;
+                break;
+            case 'south':
+                sectionGroup.rotation.y = Math.PI;
+                break;
+            case 'east':
+                sectionGroup.rotation.y = Math.PI/2;  // Changed from -Math.PI/2
+                sectionGroup.position.x = pool.width/2;
+                sectionGroup.position.z = pool.length/2;
+                break;
+            case 'west':
+                sectionGroup.rotation.y = -Math.PI/2;  // Changed from Math.PI/2
+                sectionGroup.position.x = -pool.width/2;
+                sectionGroup.position.z = pool.length/2;
+                break;
+        }
+
+        seatingSections.add(sectionGroup);
+    };
+
+    // Create all sections
+    ['north', 'south', 'east', 'west'].forEach(createSection);
+
+    return seatingSections;
+}
+
+// Add stadium seating to the scene
+const stadiumSeating = createStadiumSeating();
+scene.add(stadiumSeating);
+
 // Create a simple surfboard from primitives
 const surfboardGroup = new THREE.Group();
 
