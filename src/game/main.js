@@ -478,13 +478,15 @@ const surfboardGroup = new THREE.Group();
 
 // Create the main board shape using a box
 const boardGeometry = new THREE.BoxGeometry(surfer.boardWidth, surfer.boardThickness, surfer.boardLength);
-const boardMaterial = new THREE.MeshStandardMaterial({
+const boardMaterial = new THREE.MeshPhysicalMaterial({
     color: 0xFFFFFF,      // Pure white
     roughness: 0.05,      // Very smooth
     metalness: 0.2,       // Slight metallic sheen for gelcoat look
     envMapIntensity: 1.5, // Enhance reflections
     clearcoat: 1.0,       // Add gelcoat layer
-    clearcoatRoughness: 0.1 // Make gelcoat glossy
+    clearcoatRoughness: 0.1, // Make gelcoat glossy
+    transmission: 0.1,    // Slight translucency for wet look
+    thickness: 0.5        // Add some depth
 });
 const surfboard = new THREE.Mesh(boardGeometry, boardMaterial);
 
@@ -497,13 +499,15 @@ const endCapGeometry = new THREE.CylinderGeometry(
 );
 // Rotate cylinder to lie flat on board
 endCapGeometry.rotateY(Math.PI / 2);
-const endCapMaterial = new THREE.MeshStandardMaterial({
+const endCapMaterial = new THREE.MeshPhysicalMaterial({
     color: 0xFFFFFF,      // Pure white
     roughness: 0.05,      // Very smooth
     metalness: 0.2,       // Slight metallic sheen for gelcoat look
     envMapIntensity: 1.5, // Enhance reflections
     clearcoat: 1.0,       // Add gelcoat layer
-    clearcoatRoughness: 0.1 // Make gelcoat glossy
+    clearcoatRoughness: 0.1, // Make gelcoat glossy
+    transmission: 0.1,    // Slight translucency for wet look
+    thickness: 0.5        // Add some depth
 });
 const endCap = new THREE.Mesh(endCapGeometry, endCapMaterial);
 // Position at front of board (negative Z)
