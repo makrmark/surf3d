@@ -717,99 +717,30 @@ function createBeachBall() {
     beachBalls.push(beachBall);
 }
 
-// Add pop counter and message overlay
+// Initialize game state
 let beachBallsPopped = 0;
-const popMessageOverlay = document.getElementById('pop-message-overlay');
 
-// Create particle system for pop effects
-const particleGeometry = new THREE.BufferGeometry();
-const particleCount = 50; // Number of particles per pop
-const particlePositions = new Float32Array(particleCount * 3);
-const particleVelocities = [];
-const particleLifetimes = [];
-const particleMaterial = new THREE.PointsMaterial({
-    color: 0xff0000, // Red color like the beach balls
-    size: 0.2, // Small particle size
-    transparent: true,
-    opacity: 1.0,
-    blending: THREE.AdditiveBlending // Makes particles glow
-});
-const particles = new THREE.Points(particleGeometry, particleMaterial);
-scene.add(particles);
+// Create pop message element
+const popMessage = document.getElementById('pop-message');
+popMessage.classList.add('arcade-text');
+popMessage.textContent = 'POP!';
 
-// Initialize particle geometry with empty positions
-particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-particles.visible = false; // Start with particles hidden
+// Create foam zone overlay
+const foamOverlay = document.getElementById('foam-zone-overlay');
+foamOverlay.classList.add('arcade-text');
+foamOverlay.textContent = 'FOAM ZONE!';
 
-// Function to create pop effect
-function createPopEffect(position) {
-    // Reset particle positions and velocities
-    for (let i = 0; i < particleCount; i++) {
-        // Random position around the beach ball
-        const radius = 2.0; // Same as beach ball radius
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.random() * Math.PI * 2;
+// Create arcade-style score display
+const scoreDisplay = document.getElementById('score-display');
+scoreDisplay.classList.add('arcade-text');
 
-        particlePositions[i * 3] = position.x + radius * Math.sin(theta) * Math.cos(phi);
-        particlePositions[i * 3 + 1] = position.y + radius * Math.sin(theta) * Math.sin(phi);
-        particlePositions[i * 3 + 2] = position.z + radius * Math.cos(theta);
-
-        // Random velocity outward
-        const speed = 5 + Math.random() * 5; // 5-10 m/s
-        particleVelocities[i] = {
-            x: (particlePositions[i * 3] - position.x) * speed,
-            y: (particlePositions[i * 3 + 1] - position.y) * speed,
-            z: (particlePositions[i * 3 + 2] - position.z) * speed
-        };
-
-        // Random lifetime between 0.5 and 1.5 seconds
-        particleLifetimes[i] = 0.5 + Math.random();
-    }
-
-    // Update geometry with new positions
-    particleGeometry.attributes.position.needsUpdate = true;
-
-    // Make particles visible
-    particles.visible = true;
-}
-
-// Function to update particles
-function updateParticles(dt) {
-    if (!particles.visible) return;
-
-    let allDead = true;
-    for (let i = 0; i < particleCount; i++) {
-        if (particleLifetimes[i] > 0) {
-            allDead = false;
-            // Update position
-            particlePositions[i * 3] += particleVelocities[i].x * dt;
-            particlePositions[i * 3 + 1] += particleVelocities[i].y * dt;
-            particlePositions[i * 3 + 2] += particleVelocities[i].z * dt;
-
-            // Update lifetime and opacity
-            particleLifetimes[i] -= dt;
-            const opacity = particleLifetimes[i] / (0.5 + Math.random());
-            particleMaterial.opacity = opacity;
-        }
-    }
-
-    // Update geometry with new positions
-    particleGeometry.attributes.position.needsUpdate = true;
-
-    // Hide particles when all are dead
-    if (allDead) {
-        particles.visible = false;
-    }
-}
-
-// Update the showPopMessage function to include particle effect
+// Show pop message
 function showPopMessage() {
     beachBallsPopped++;
-    popMessageOverlay.textContent = `${beachBallsPopped} Popped!`;
-    popMessageOverlay.classList.add('visible');
+    popMessage.style.opacity = '1';
     setTimeout(() => {
-        popMessageOverlay.classList.remove('visible');
-    }, 1000);
+        popMessage.style.opacity = '0';
+    }, 500);
 }
 
 // Function to check collision between surfboard and beach ball
@@ -902,25 +833,86 @@ function updateBeachBalls(dt) {
     }
 }
 
-// Create arcade-style score display
-const scoreDisplay = document.createElement('div');
-scoreDisplay.id = 'score-display';
-scoreDisplay.style.position = 'fixed';
-scoreDisplay.style.top = '20px';
-scoreDisplay.style.left = '50%';
-scoreDisplay.style.transform = 'translateX(-50%)';
-scoreDisplay.style.color = '#FFD700'; // Gold color
-scoreDisplay.style.fontFamily = "'Press Start 2P', monospace"; // Arcade-style font
-scoreDisplay.style.fontSize = '24px';
-scoreDisplay.style.textShadow = '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000'; // Outlined text
-scoreDisplay.style.zIndex = '1000';
-document.body.appendChild(scoreDisplay);
+// Create particle system for pop effects
+const particleGeometry = new THREE.BufferGeometry();
+const particleCount = 50; // Number of particles per pop
+const particlePositions = new Float32Array(particleCount * 3);
+const particleVelocities = [];
+const particleLifetimes = [];
+const particleMaterial = new THREE.PointsMaterial({
+    color: 0xff0000, // Red color like the beach balls
+    size: 0.2, // Small particle size
+    transparent: true,
+    opacity: 1.0,
+    blending: THREE.AdditiveBlending // Makes particles glow
+});
+const particles = new THREE.Points(particleGeometry, particleMaterial);
+scene.add(particles);
 
-// Add font link to head
-const fontLink = document.createElement('link');
-fontLink.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';
-fontLink.rel = 'stylesheet';
-document.head.appendChild(fontLink);
+// Initialize particle geometry with empty positions
+particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+particles.visible = false; // Start with particles hidden
+
+// Function to create pop effect
+function createPopEffect(position) {
+    // Reset particle positions and velocities
+    for (let i = 0; i < particleCount; i++) {
+        // Random position around the beach ball
+        const radius = 2.0; // Same as beach ball radius
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI * 2;
+
+        particlePositions[i * 3] = position.x + radius * Math.sin(theta) * Math.cos(phi);
+        particlePositions[i * 3 + 1] = position.y + radius * Math.sin(theta) * Math.sin(phi);
+        particlePositions[i * 3 + 2] = position.z + radius * Math.cos(theta);
+
+        // Random velocity outward
+        const speed = 5 + Math.random() * 5; // 5-10 m/s
+        particleVelocities[i] = {
+            x: (particlePositions[i * 3] - position.x) * speed,
+            y: (particlePositions[i * 3 + 1] - position.y) * speed,
+            z: (particlePositions[i * 3 + 2] - position.z) * speed
+        };
+
+        // Random lifetime between 0.5 and 1.5 seconds
+        particleLifetimes[i] = 0.5 + Math.random();
+    }
+
+    // Update geometry with new positions
+    particleGeometry.attributes.position.needsUpdate = true;
+
+    // Make particles visible
+    particles.visible = true;
+}
+
+// Function to update particles
+function updateParticles(dt) {
+    if (!particles.visible) return;
+
+    let allDead = true;
+    for (let i = 0; i < particleCount; i++) {
+        if (particleLifetimes[i] > 0) {
+            allDead = false;
+            // Update position
+            particlePositions[i * 3] += particleVelocities[i].x * dt;
+            particlePositions[i * 3 + 1] += particleVelocities[i].y * dt;
+            particlePositions[i * 3 + 2] += particleVelocities[i].z * dt;
+
+            // Update lifetime and opacity
+            particleLifetimes[i] -= dt;
+            const opacity = particleLifetimes[i] / (0.5 + Math.random());
+            particleMaterial.opacity = opacity;
+        }
+    }
+
+    // Update geometry with new positions
+    particleGeometry.attributes.position.needsUpdate = true;
+
+    // Hide particles when all are dead
+    if (allDead) {
+        particles.visible = false;
+    }
+}
 
 // Animation loop
 const clock = new THREE.Clock();
@@ -994,7 +986,6 @@ function animate() {
 
     // Check if surfer is in foam zone
     const surferPosition = surfer.getBoardPosition();
-    const foamOverlay = document.getElementById('foam-zone-overlay');
     if (isInFoam(surferPosition)) {
         scene.background.lerp(new THREE.Color(0xffffff), 0.1); // Smoothly transition to white
         foamOverlay.classList.add('visible');

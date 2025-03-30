@@ -9,6 +9,7 @@ body {
     /* prevent pinch to zoom */
 }
 
+/* Game Container */
 #container {
     position: fixed;
     top: 0;
@@ -17,47 +18,47 @@ body {
     height: 100%;
 }
 
+/* Game UI Elements */
+.arcade-text {
+    font-family: 'Press Start 2P', monospace;
+    text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+}
+
 #hud {
     position: fixed;
     top: 10px;
     left: 10px;
     color: white;
-    font-family: Arial, sans-serif;
-    text-shadow: 1px 1px 2px black;
-    z-index: 100;
-    pointer-events: none;
-    padding: 10px;
+    font-family: monospace;
     background-color: rgba(0, 0, 0, 0.7);
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    border-radius: 5px;
+    display: none;
 }
 
-#help {
+#score-display {
     position: fixed;
-    bottom: 10px;
-    left: 10px;
-    color: white;
-    font-family: Arial, sans-serif;
-    text-shadow: 1px 1px 2px black;
-    z-index: 100;
-    pointer-events: none;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #FFD700;
+    font-size: 24px;
+    z-index: 1000;
+}
+#score-display.arcade-text {
+    font-family: 'Press Start 2P', monospace;
 }
 
-#nipple {
+#pop-message {
     position: fixed;
-    bottom: 100px;
-    right: 100px;
-    width: 200px;
-    height: 200px;
-    touch-action: none;
-    z-index: 2000;
-    user-select: auto;
-    /* Allow text selection */
-    -webkit-user-select: auto;
-    /* Safari */
-    -ms-user-select: auto;
-    /* IE 10+ */
-    pointer-events: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #FFD700;
+    font-size: 36px;
+    opacity: 0;
+    transition: opacity 0.5s;
+    z-index: 1000;
 }
 
 #foam-zone-overlay {
@@ -65,19 +66,15 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 72px;
-    font-weight: bold;
-    color: yellow;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-    font-family: Futura, Arial, sans-serif;
-    z-index: 500;
-    pointer-events: none;
+    color: #ffffff;
+    font-size: 48px;
     opacity: 0;
-    transition: opacity 0.3s ease-in-out;
+    transition: opacity 0.3s;
+    z-index: 1000;
 }
 
 #foam-zone-overlay.visible {
-    opacity: 1;
+    opacity: 0.8;
 }
 
 #pop-message-overlay {
@@ -98,6 +95,25 @@ body {
 
 #pop-message-overlay.visible {
     opacity: 1;
+}
+
+/* Nipple Controls */
+#nipple {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+}
+
+#help {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-shadow: 1px 1px 2px black;
+    z-index: 100;
+    pointer-events: none;
 }
 
 /* Responsive text sizes for popovers */
