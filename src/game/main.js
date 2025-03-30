@@ -597,7 +597,7 @@ window.addEventListener('keyup', (e) => {
 const nippleOptions = {
     zone: document.getElementById('nipple'),
     mode: 'static',
-    position: { right: '50px', bottom: '50px' },
+    position: { left: '50px', bottom: '50px' },
     color: 'white',
     size: 120
 };

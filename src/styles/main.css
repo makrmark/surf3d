@@ -68,6 +68,8 @@ body {
     transform: translate(-50%, -50%);
     color: #ffffff;
     font-size: 48px;
+    white-space: nowrap;
+    text-align: center;
     opacity: 0;
     transition: opacity 0.3s;
     z-index: 1000;
@@ -100,8 +102,8 @@ body {
 /* Nipple Controls */
 #nipple {
     position: fixed;
-    bottom: 100px;
-    left: 100px;
+    bottom: 50px;
+    left: 50px;
     width: 200px;
     height: 200px;
     z-index: 2000;
@@ -126,7 +128,9 @@ body {
 /* Responsive text sizes for popovers */
 @media screen and (max-width: 768px) {
     #foam-zone-overlay {
-        font-size: 48px;
+        font-size: 32px;
+        width: 90%;
+        white-space: normal;
     }
 
     #pop-message-overlay {
