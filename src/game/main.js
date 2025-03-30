@@ -374,7 +374,7 @@ function createStadiumSeating() {
     // Create a single section (will be rotated for different sides)
     const createSection = (direction) => {
         const sectionGroup = new THREE.Group();
-        
+
         // Create deck
         const deckMaterial = new THREE.MeshPhongMaterial({
             color: 0x808080,
@@ -425,23 +425,23 @@ function createStadiumSeating() {
         // Left stairs
         const leftStairs = new THREE.Mesh(stairGeometry, stairMaterial);
         leftStairs.position.set(
-            -(pool.width + 2 * pool.wallThickness)/2 - stairWidth/2,
-            baseHeight + deckHeight + (numRows * rowHeight)/2,
-            deckWidth + (numRows * rowDepth)/2
+            -(pool.width + 2 * pool.wallThickness) / 2 - stairWidth / 2,
+            baseHeight + deckHeight + (numRows * rowHeight) / 2,
+            deckWidth + (numRows * rowDepth) / 2
         );
         sectionGroup.add(leftStairs);
 
         // Right stairs
         const rightStairs = new THREE.Mesh(stairGeometry, stairMaterial);
         rightStairs.position.set(
-            (pool.width + 2 * pool.wallThickness)/2 + stairWidth/2,
-            baseHeight + deckHeight + (numRows * rowHeight)/2,
-            deckWidth + (numRows * rowDepth)/2
+            (pool.width + 2 * pool.wallThickness) / 2 + stairWidth / 2,
+            baseHeight + deckHeight + (numRows * rowHeight) / 2,
+            deckWidth + (numRows * rowDepth) / 2
         );
         sectionGroup.add(rightStairs);
 
         // Position and rotate the section based on direction
-        switch(direction) {
+        switch (direction) {
             case 'north':
                 sectionGroup.position.z = pool.length;
                 break;
@@ -449,14 +449,14 @@ function createStadiumSeating() {
                 sectionGroup.rotation.y = Math.PI;
                 break;
             case 'east':
-                sectionGroup.rotation.y = Math.PI/2;  // Changed from -Math.PI/2
-                sectionGroup.position.x = pool.width/2;
-                sectionGroup.position.z = pool.length/2;
+                sectionGroup.rotation.y = Math.PI / 2;  // Changed from -Math.PI/2
+                sectionGroup.position.x = pool.width / 2;
+                sectionGroup.position.z = pool.length / 2;
                 break;
             case 'west':
-                sectionGroup.rotation.y = -Math.PI/2;  // Changed from Math.PI/2
-                sectionGroup.position.x = -pool.width/2;
-                sectionGroup.position.z = pool.length/2;
+                sectionGroup.rotation.y = -Math.PI / 2;  // Changed from Math.PI/2
+                sectionGroup.position.x = -pool.width / 2;
+                sectionGroup.position.z = pool.length / 2;
                 break;
         }
 
@@ -563,6 +563,20 @@ scene.add(axesHelper);
 // - X-axis: Red
 // - Y-axis: Green
 // - Z-axis: Blue
+
+// Debug mode state
+let debugMode = false;
+
+// Add default HUD style
+document.getElementById('hud').style.display = 'none';
+
+// Add debug mode toggle
+document.addEventListener('keydown', (event) => {
+    if (event.key.toLowerCase() === 'd') {
+        debugMode = !debugMode;
+        document.getElementById('hud').style.display = debugMode ? 'block' : 'none';
+    }
+});
 
 // Keyboard input
 let leftPressed = false, rightPressed = false, upPressed = false, downPressed = false;
@@ -888,6 +902,26 @@ function updateBeachBalls(dt) {
     }
 }
 
+// Create arcade-style score display
+const scoreDisplay = document.createElement('div');
+scoreDisplay.id = 'score-display';
+scoreDisplay.style.position = 'fixed';
+scoreDisplay.style.top = '20px';
+scoreDisplay.style.left = '50%';
+scoreDisplay.style.transform = 'translateX(-50%)';
+scoreDisplay.style.color = '#FFD700'; // Gold color
+scoreDisplay.style.fontFamily = "'Press Start 2P', monospace"; // Arcade-style font
+scoreDisplay.style.fontSize = '24px';
+scoreDisplay.style.textShadow = '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000'; // Outlined text
+scoreDisplay.style.zIndex = '1000';
+document.body.appendChild(scoreDisplay);
+
+// Add font link to head
+const fontLink = document.createElement('link');
+fontLink.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';
+fontLink.rel = 'stylesheet';
+document.head.appendChild(fontLink);
+
 // Animation loop
 const clock = new THREE.Clock();
 function animate() {
@@ -938,20 +972,25 @@ function animate() {
     const waveSlope = surfer.calculateWaveSlope();
 
     // Update HUD
-    document.getElementById('hud').innerHTML = `
-        Speed: ${netVelocityMagnitude.toFixed(2)} m/s<br>
-        Water Speed: ${surfer.waterSpeed.toFixed(2)} m/s<br>
-        Heading: ${heading.toFixed(1)} deg<br>
-        Position: (${surfer.x.toFixed(1)}, ${surfer.z.toFixed(1)})<br>
-        Stance: ${surfer.getStanceName()}<br>
-        Wave Slope: ${(waveSlope * 180 / Math.PI).toFixed(1)}°<br>
-        Forces (N):<br>
-        - Gravity: ${gravityMagnitude.toFixed(1)}<br>
-        - Drag: ${dragMagnitude.toFixed(1)}<br>
-        - Water: ${waterMagnitude.toFixed(1)}<br>
-        Net Velocity: ${netVelocityMagnitude.toFixed(2)} m/s<br>
-        Beachballs Popped: ${beachBallsPopped}<br>
-    `;
+    if (debugMode) {
+        document.getElementById('hud').innerHTML = `
+            Speed: ${netVelocityMagnitude.toFixed(2)} m/s<br>
+            Water Speed: ${surfer.waterSpeed.toFixed(2)} m/s<br>
+            Heading: ${heading.toFixed(1)} deg<br>
+            Position: (${surfer.x.toFixed(1)}, ${surfer.z.toFixed(1)})<br>
+            Stance: ${surfer.getStanceName()}<br>
+            Wave Slope: ${(waveSlope * 180 / Math.PI).toFixed(1)}°<br>
+            Forces (N):<br>
+            - Gravity: ${gravityMagnitude.toFixed(1)}<br>
+            - Drag: ${dragMagnitude.toFixed(1)}<br>
+            - Water: ${waterMagnitude.toFixed(1)}<br>
+            Net Velocity: ${netVelocityMagnitude.toFixed(2)} m/s<br>
+            Beachballs Popped: ${beachBallsPopped}<br>
+        `;
+    }
+
+    // Update score display
+    scoreDisplay.innerHTML = `Beach Balls × ${beachBallsPopped}`;
 
     // Check if surfer is in foam zone
     const surferPosition = surfer.getBoardPosition();
