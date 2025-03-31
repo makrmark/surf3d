@@ -158,13 +158,13 @@ export class Surfer {
         const centripetalAcc = (totalVelocity ** 2) / turnRadius;
 
         // Calculate centripetal force (F = ma)
-        // -0.1 is a magic number that scales the force
-        const centripetalForce = -0.1 * turnInput * centripetalAcc * this.mass;
+        // 0.5 is a magic number that scales the force
+        const centripetalForce = 0.5 * turnInput * centripetalAcc * this.mass;
 
         console.log(`Centripetal Force: ${centripetalForce}`);
 
         // Calculate direction of centripetal force (perpendicular to velocity)
-        const angle = this.theta + Math.PI / 2; // 90 degrees from current heading
+        const angle = this.theta + (turnInput > 0 ? -Math.PI / 2 : Math.PI / 2); // 90 degrees from current heading (clockwise or counter-clockwise depending on turn direction)
 
         return {
             x: centripetalForce * Math.cos(angle),
