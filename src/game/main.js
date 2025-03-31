@@ -918,11 +918,99 @@ function updateParticles(dt) {
     }
 }
 
+// Create sharks
+const sharks = [];
+const sharkGeometry = new THREE.ConeGeometry(1, 2, 3); // Base radius 1m, height 2m, 3 segments
+const sharkMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0x000000, // Black color
+    roughness: 0.2,  // Lower roughness for more shininess
+    metalness: 0.9  // Higher metalness for more reflectivity
+});
+
+// Function to create sharks
+function createSharks() {
+    const numSharks = 5; // Number of sharks
+    for (let i = 0; i < numSharks; i++) {
+        const shark = new THREE.Mesh(sharkGeometry, sharkMaterial);
+        shark.position.set(
+            (Math.random() - 0.5) * pool.width, // Random x position within pool width
+            0, // Start at water level
+            Math.random() * pool.length // Random z position within pool length
+        );
+        scene.add(shark);
+        sharks.push(shark);
+    }
+}
+
+// Add sharks to the scene
+createSharks();
+
+// Function to update sharks
+function updateSharks(dt) {
+    const flowSpeed = 10; // Speed of flow (m/s)
+    const k = 2 * Math.PI / pool.waveLength; // Wave number
+
+    sharks.forEach(shark => {
+        // Move south
+        shark.position.z -= flowSpeed * dt;
+
+        // Calculate the tilt based on z position
+        const tilt = -(pool.tiltHeight * (shark.position.z / pool.length));
+
+        // Update y position to follow the wave profile with tilt
+        shark.position.y = pool.waveAmplitude * Math.cos(k * (pool.length - shark.position.z)) + tilt + 0.5;
+
+        // Reset to north end when reaching south
+        if (shark.position.z < 0) {
+            shark.position.z = pool.length;
+            shark.position.x = (Math.random() - 0.5) * pool.width; // Randomize x position
+        }
+    });
+}
+
+// Function to check shark collisions
+function checkSharkCollisions() {
+    // Get the shark attack message element
+    const sharkAttackMessage = document.getElementById('shark-attack-message');
+    const boardPosition = surfboardGroup.position;
+    const boardDimensions = {
+        width: surfer.boardWidth,
+        length: surfer.boardLength,
+        height: surfer.boardThickness
+    };
+
+    sharks.forEach(shark => {
+        // Calculate distance between shark and board
+        const dx = shark.position.x - boardPosition.x;
+        const dz = shark.position.z - boardPosition.z;
+        const distance = Math.sqrt(dx * dx + dz * dz);
+
+        // Check if shark is within collision range
+        const collisionRange = 2; // 2m collision range
+        if (distance < collisionRange) {
+            // Show shark attack message
+            sharkAttackMessage.classList.add('visible');
+            scene.background.lerp(new THREE.Color(0xff0000), 1.0);
+
+            // Reset game after 1 second
+            setTimeout(() => {
+                sharkAttackMessage.classList.remove('visible');
+                resetGame();
+            }, 1000);
+        }
+    });
+}
+
 // Animation loop
 const clock = new THREE.Clock();
 function animate() {
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.1);
+
+    // Process input
+    const turnInput = (leftPressed ? 1 : 0) - (rightPressed ? 1 : 0);
+    const positionInput = (upPressed ? 1 : 0) - (downPressed ? 1 : 0);
+    surfer.update(dt, turnInput, positionInput);
 
     // Update flowing objects
     updateFlowingObjects(dt);
@@ -930,42 +1018,22 @@ function animate() {
     // Update foam bubbles
     updateFoamBubbles(dt);
 
-    // Update beach balls
-    updateBeachBalls(dt);
-
-    // Update particles
-    updateParticles(dt);
-
-    // Process input
-    const turnInput = (leftPressed ? 1 : 0) - (rightPressed ? 1 : 0);
-    const positionInput = (upPressed ? 1 : 0) - (downPressed ? 1 : 0);
-    surfer.update(dt, turnInput, positionInput);
-
     // Update surfboard
     updateSurfboard();
-
     // Update arm
     updateArm();
 
+    // Update beach balls
+    updateBeachBalls(dt);
+    // Update particles
+    updateParticles(dt);
+    // Update sharks
+    updateSharks(dt);
+    // Check collisions
+    checkSharkCollisions();
+
     // Update camera with smoothing
     updateCamera(0.9);
-
-    // Normalize heading to -180 to +180 degrees
-    let heading = (surfer.theta * 180 / Math.PI) % 360;
-    if (heading > 180) heading -= 360;
-    else if (heading < -180) heading += 360;
-
-    // Calculate force magnitudes
-    const gravityForce = surfer.calculateGravityForce();
-    const dragForce = surfer.calculateDragForce(0);
-    const waterForce = surfer.calculateWaterForce();
-    const gravityMagnitude = Math.sqrt(gravityForce.x ** 2 + gravityForce.z ** 2);
-    const dragMagnitude = Math.sqrt(dragForce.x ** 2 + dragForce.z ** 2);
-    const waterMagnitude = Math.sqrt(waterForce.x ** 2 + waterForce.z ** 2);
-    const netVelocityMagnitude = Math.sqrt(surfer.velocity.vx ** 2 + surfer.velocity.vz ** 2);
-
-    // Use calculateWaveSlope for wave slope
-    const waveSlope = surfer.calculateWaveSlope();
 
     // Update HUD
     if (debugMode) {
@@ -992,10 +1060,10 @@ function animate() {
     const surferPosition = surfer.getBoardPosition();
     if (isInFoam(surferPosition)) {
         scene.background.lerp(new THREE.Color(0xffffff), 0.1); // Smoothly transition to white
-        foamOverlay.classList.add('visible');
+        foamOverlay.classList.remove('hidden');
     } else {
         scene.background.lerp(new THREE.Color(0x87CEEB), 0.1); // Smoothly transition back to sky blue
-        foamOverlay.classList.remove('visible');
+        foamOverlay.classList.add('hidden');
     }
 
     // Boundary check - only check horizontal boundaries, not vertical
