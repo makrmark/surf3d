@@ -142,6 +142,37 @@ export class Surfer {
         return this.waveSlope;
     }
 
+    calculateCentripetalForce(turnInput, turnRate) {
+        // Return zero force if not turning
+        if (turnInput === 0) {
+            return { x: 0, z: 0 };
+        }
+
+        // Calculate total velocity
+        const totalVelocity = Math.sqrt(this.velocity.vx ** 2 + this.velocity.vz ** 2);
+
+        // Calculate turn radius based on total velocity and turn rate
+        const turnRadius = totalVelocity / turnRate;
+
+        // Calculate centripetal acceleration (v^2 / r)
+        const centripetalAcc = (totalVelocity ** 2) / turnRadius;
+
+        // Calculate centripetal force (F = ma)
+        // -0.1 is a magic number that scales the force
+        const centripetalForce = -0.1 * turnInput * centripetalAcc * this.mass;
+
+        console.log(`Centripetal Force: ${centripetalForce}`);
+
+        // Calculate direction of centripetal force (perpendicular to velocity)
+        const angle = this.theta + Math.PI / 2; // 90 degrees from current heading
+
+        return {
+            x: centripetalForce * Math.cos(angle),
+            z: centripetalForce * Math.sin(angle)
+        };
+    }
+
+
     update(dt, turnInput, positionInput) {
         this.positionOnBoard = positionInput;
 
@@ -154,11 +185,12 @@ export class Surfer {
         const F_gravity = this.calculateGravityForce();
         const F_water = this.calculateWaterForce();
         const F_drag = this.calculateDragForce(turnInput);
+        const F_centripetal = this.calculateCentripetalForce(turnInput, turnRate);
 
         // Net force and acceleration
         const F_net = {
-            x: F_water.x + F_gravity.x + F_drag.x,
-            z: F_water.z + F_gravity.z + F_drag.z
+            x: F_water.x + F_gravity.x + F_drag.x + F_centripetal.x,
+            z: F_water.z + F_gravity.z + F_drag.z + F_centripetal.z
         };
         const acceleration = { x: F_net.x / this.mass, z: F_net.z / this.mass };
 
