@@ -539,6 +539,7 @@ arm.position.y = armLength / 2;
 
 // Create a shoulder pivot point
 const shoulderPivot = new THREE.Group();
+
 shoulderPivot.add(arm);
 
 // Create the hand at the negative Z end (front end)
@@ -551,6 +552,17 @@ arm.add(hand);
 
 // Add the shoulder pivot to the surfboard
 surfboardGroup.add(shoulderPivot);
+
+// Update shoulder pivot position relative to surfboard
+shoulderPivot.position.set(
+    -0.3,  // 30cm to the left of surfboard center
+    1.5,   // 1.5m above surfboard
+    1.0    // 1m back from surfboard center
+);
+
+// Apply base rotation and turn rotation to the shoulder pivot
+shoulderPivot.rotation.x = -Math.PI / 2; // Pivot down 90 degrees
+shoulderPivot.rotation.y = 0;            // Point forward
 
 // Set initial camera position with no smoothing
 updateCamera(1.0);
@@ -663,13 +675,6 @@ function updateSurfboard() {
     // Update main surfboard
     surfboardGroup.position.copy(surfer.getBoardPosition());
     surfboardGroup.rotation.copy(surfer.getBoardPitch());
-
-    // Update shoulder pivot position relative to surfboard
-    shoulderPivot.position.set(
-        -0.3,  // 30cm to the left of surfboard center
-        1.5,   // 1.5m above surfboard
-        1.0    // 1m back from surfboard center
-    );
 }
 
 // Update the surfer's arm position and rotation
@@ -678,17 +683,13 @@ function updateArm() {
     const turnInput = (leftPressed ? 1 : 0) - (rightPressed ? 1 : 0);
     const armRotation = turnInput * (15 * Math.PI / 180); // 15 degrees in radians
 
-    // Apply base rotation and turn rotation to the shoulder pivot
-    shoulderPivot.rotation.x = -Math.PI / 2; // Pivot down 90 degrees
-    shoulderPivot.rotation.y = 0;            // Point forward
     shoulderPivot.rotation.z = armRotation;  // Apply turn rotation
 }
 
 // Function to reset the game
 function resetGame() {
     surfer.reset(); // Reset surfer's position and state
-    camera.position.set(0, 10, pool.length / 2); // Reset camera position
-    camera.lookAt(0, 0, 0); // Reset camera orientation
+    updateCamera(1.0);
     beachBallsPopped = 0; // Reset beach balls popped counter
     scene.background = new THREE.Color(0x87CEEB);
     gameState = "playing";
@@ -1053,7 +1054,7 @@ function animate() {
     }
 
     // Update camera with smoothing
-    updateCamera(0.9);
+    updateCamera(1.0);
 
     // Update HUD
     if (debugMode) {
