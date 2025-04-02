@@ -45,6 +45,7 @@ body {
     font-size: 24px;
     z-index: 1000;
 }
+
 #score-display.arcade-text {
     font-family: 'Press Start 2P', monospace;
 }
@@ -73,10 +74,7 @@ body {
     opacity: 0;
     transition: opacity 0.3s;
     z-index: 1000;
-}
-
-#foam-zone-overlay.visible {
-    opacity: 0.8;
+    pointer-events: none;
 }
 
 #pop-message-overlay {
@@ -95,10 +93,6 @@ body {
     transition: opacity 0.3s ease-in-out;
 }
 
-#pop-message-overlay.visible {
-    opacity: 1;
-}
-
 /* Shark Attack Message */
 #shark-attack-message {
     position: fixed;
@@ -110,13 +104,10 @@ body {
     color: #FF0000;
     text-align: center;
     z-index: 1000;
-    display: none;
+    opacity: 0;
+    transition: opacity 0.3s;
     user-select: none;
     -webkit-user-select: none;
-}
-
-#shark-attack-message.visible {
-    display: block;
 }
 
 /* Nipple Controls */

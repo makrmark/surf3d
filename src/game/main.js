@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Pool } from './Pool.js';
 import { Surfer } from './Surfer.js';
 
+let gameState = "starting";
 const pool = new Pool(); // Create a Pool instance
 const surfer = new Surfer(pool); // Pass the Pool instance to the Surfer
 
@@ -686,11 +687,12 @@ function updateArm() {
 
 // Function to reset the game
 function resetGame() {
-    console.log('Game over!');
     surfer.reset(); // Reset surfer's position and state
     camera.position.set(0, 10, pool.length / 2); // Reset camera position
     camera.lookAt(0, 0, 0); // Reset camera orientation
     beachBallsPopped = 0; // Reset beach balls popped counter
+    scene.background = new THREE.Color(0x87CEEB);
+    gameState = "playing";
 }
 
 // Update the isInFoam function to use the fixed foam zone
@@ -989,12 +991,13 @@ function checkSharkCollisions() {
         const collisionRange = 2; // 2m collision range
         if (distance < collisionRange) {
             // Show shark attack message
-            sharkAttackMessage.classList.add('visible');
-            scene.background.lerp(new THREE.Color(0xff0000), 1.0);
+            sharkAttackMessage.style.opacity = 1;
+            scene.background.lerp(new THREE.Color(0xff0000), 0.9);
+            gameState = "restarting";
 
             // Reset game after 1 second
             setTimeout(() => {
-                sharkAttackMessage.classList.remove('visible');
+                sharkAttackMessage.style.opacity = 0;
                 resetGame();
             }, 1000);
         }
@@ -1003,6 +1006,7 @@ function checkSharkCollisions() {
 
 // Animation loop
 const clock = new THREE.Clock();
+gameState = "playing";
 function animate() {
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.1);
@@ -1010,6 +1014,7 @@ function animate() {
     // Process input
     const turnInput = (leftPressed ? 1 : 0) - (rightPressed ? 1 : 0);
     const positionInput = (upPressed ? 1 : 0) - (downPressed ? 1 : 0);
+
     surfer.update(dt, turnInput, positionInput);
 
     // Update flowing objects
@@ -1018,19 +1023,37 @@ function animate() {
     // Update foam bubbles
     updateFoamBubbles(dt);
 
-    // Update surfboard
-    updateSurfboard();
-    // Update arm
-    updateArm();
-
     // Update beach balls
     updateBeachBalls(dt);
     // Update particles
     updateParticles(dt);
     // Update sharks
     updateSharks(dt);
-    // Check collisions
-    checkSharkCollisions();
+
+    // Update surfboard
+    updateSurfboard();
+    // Update arm
+    updateArm();
+
+
+    if (gameState === "playing") {
+
+        // Check collisions
+        checkSharkCollisions();
+
+        // Check if surfer is in foam zone
+        const surferPosition = surfer.getBoardPosition();
+        if (isInFoam(surferPosition)) {
+            gameState = "restarting";
+            foamOverlay.style.opacity = 1;
+            scene.background.lerp(new THREE.Color(0xffffff), 0.1); // Smoothly transition to white
+            // Reset game after 1 second
+            setTimeout(() => {
+                foamOverlay.style.opacity = 0;
+                resetGame();
+            }, 1000);
+        }
+    }
 
     // Update camera with smoothing
     updateCamera(0.9);
@@ -1055,22 +1078,6 @@ function animate() {
 
     // Update score display
     scoreDisplay.innerHTML = `Beach Balls × ${beachBallsPopped}`;
-
-    // Check if surfer is in foam zone
-    const surferPosition = surfer.getBoardPosition();
-    if (isInFoam(surferPosition)) {
-        scene.background.lerp(new THREE.Color(0xffffff), 0.1); // Smoothly transition to white
-        foamOverlay.classList.remove('hidden');
-    } else {
-        scene.background.lerp(new THREE.Color(0x87CEEB), 0.1); // Smoothly transition back to sky blue
-        foamOverlay.classList.add('hidden');
-    }
-
-    // Boundary check - only check horizontal boundaries, not vertical
-    const halfWidth = pool.width / 2;
-    if (Math.abs(surfer.x) > halfWidth || surfer.z < 0 || surfer.z > pool.length) {
-        resetGame();
-    }
 
     renderer.render(scene, camera);
 }
