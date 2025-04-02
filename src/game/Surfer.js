@@ -9,7 +9,7 @@ export class Surfer {
         this.C_long = 0.4; // Longitudinal drag coefficient
         this.C_lat = 0.9; // Lateral drag coefficient, higher than longitudinal
         this.driveFactor = 200;
-        this.waterSpeed = -10; // Constant, possibly wave effect
+        this.waterSpeed = -pool.waveSpeed; // Constant, possibly wave effect
         this.mass = 70;
         this.height = 1.8;
         this.pumpingForceMagnitude = 100; // Forward force when pumping
@@ -158,8 +158,8 @@ export class Surfer {
         const centripetalAcc = (totalVelocity ** 2) / turnRadius;
 
         // Calculate centripetal force (F = ma)
-        // 0.5 is a magic number that scales the force
-        const centripetalForce = 0.5 * turnInput * centripetalAcc * this.mass;
+        // 0.8 is a magic number that scales the force
+        const centripetalForce = 0.8 * turnInput * centripetalAcc * this.mass;
 
         console.log(`Centripetal Force: ${centripetalForce}`);
 
@@ -201,13 +201,22 @@ export class Surfer {
         this.z += this.velocity.vz * dt;
 
         // Handle side wall collisions with 1m tolerance
-        const wallTolerance = 1.0; // 1 meter buffer from walls
+        const wallTolerance = 1.2; // 1 meter buffer from walls
         const halfWidth = this.pool.width / 2 - wallTolerance;
         if (Math.abs(this.x) > halfWidth) {
             // If we've gone past the wall, move back to the wall
             this.x = Math.sign(this.x) * halfWidth;
             // Zero out sideways velocity
             this.velocity.vx = 0;
+        }
+
+        // Handle front wall collision
+        const frontTolerance = 2.0; // 1 meter buffer from front wall
+        if (this.z < frontTolerance) {
+            // If we've gone past the front wall, move back to the front wall
+            this.z = frontTolerance
+            // Zero out frontwards velocity
+            this.velocity.vz = 0;
         }
     }
 

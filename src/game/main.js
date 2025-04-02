@@ -86,11 +86,10 @@ for (let i = 0; i < numObjects; i++) {
 
 // Update flowing objects to follow the wave profile
 function updateFlowingObjects(dt) {
-    const flowSpeed = 10; // Speed of flow (m/s)
     const k = 2 * Math.PI / pool.waveLength; // Wave number
 
     flowingObjects.forEach(obj => {
-        obj.position.z -= flowSpeed * dt; // Move south
+        obj.position.z -= pool.waveSpeed * dt; // Move south
         if (obj.position.z < 0) {
             obj.position.z = pool.length; // Reset to the north end
             obj.position.x = (Math.random() - 0.5) * pool.width; // Randomize x position
@@ -799,7 +798,6 @@ function checkCollision(surfboardPos, beachBallPos) {
 
 // Update the beach ball collision handling in updateBeachBalls
 function updateBeachBalls(dt) {
-    const flowSpeed = 10; // Same speed as water flow
     const k = 2 * Math.PI / pool.waveLength; // Wave number
 
     // Spawn new beach ball every 5 seconds
@@ -815,7 +813,7 @@ function updateBeachBalls(dt) {
         const beachBall = beachBalls[i];
 
         // Move north
-        beachBall.position.z -= flowSpeed * dt;
+        beachBall.position.z -= pool.waveSpeed * dt;
 
         // Calculate the tilt based on z position
         const tilt = -(pool.tiltHeight * (beachBall.position.z / pool.length));
@@ -949,12 +947,11 @@ createSharks();
 
 // Function to update sharks
 function updateSharks(dt) {
-    const flowSpeed = 10; // Speed of flow (m/s)
     const k = 2 * Math.PI / pool.waveLength; // Wave number
 
     sharks.forEach(shark => {
         // Move south
-        shark.position.z -= flowSpeed * dt;
+        shark.position.z -= pool.waveSpeed * dt;
 
         // Calculate the tilt based on z position
         const tilt = -(pool.tiltHeight * (shark.position.z / pool.length));

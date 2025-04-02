@@ -7,5 +7,6 @@ export class Pool {
         this.wallHeight = 10; // Height of the pool walls
         this.wallThickness = 1; // Thickness of the pool walls
         this.tiltHeight = 3.0; // Height difference between north and south ends (doubled from 2.0)
+        this.waveSpeed = 15; // Wave speed
     }
 }
